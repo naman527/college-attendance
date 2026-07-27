@@ -31,16 +31,13 @@ def init_db():
 
 init_db()
 
-st.markdown(
-    """
+st.markdown("""
 <style>
 #MainMenu, header, footer {visibility: hidden;}
 .stApp {background: #f8fafc; color: #0f172a; font-family: 'Plus Jakarta Sans', sans-serif;}
 .stButton > button {width: 100%; border-radius: 12px; font-weight: 700; background: #4f46e5; color: white; padding: 12px; border: none;}
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 JOKES = [
     "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
@@ -367,4 +364,4 @@ else:
             if st.button("🚀 Publish Notice to Class"):
                 with engine.begin() as conn:
                     conn.execute(
-                        text("INSERT INTO notices (category, title, conte
+                        text("INSERT INTO notices (category, title, content, posted_
