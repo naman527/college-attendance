@@ -24,7 +24,10 @@ def init_db():
         conn.exec_driver_sql("CREATE TABLE IF NOT EXISTS attendance (student_name TEXT, course TEXT, year TEXT, subject TEXT, date TEXT, month TEXT, status TEXT, marked_by TEXT)")
         conn.exec_driver_sql("CREATE TABLE IF NOT EXISTS notices (id SERIAL PRIMARY KEY, category TEXT, title TEXT, content TEXT, file_data BYTEA, file_name TEXT, posted_by TEXT, role TEXT, target_course TEXT, target_year TEXT, date TEXT)")
         conn.exec_driver_sql("CREATE TABLE IF NOT EXISTS holidays (id SERIAL PRIMARY KEY, title TEXT, date TEXT, category TEXT)")
-        conn.exec_driver_sql("INSERT INTO users (username, password, role, course, year, is_approved) VALUES (%s, %s, 'Admin', 'ALL', 'ALL', 1) ON CONFLICT (username) DO UPDATE SET password = EXCLUDED.password, role = 'Admin', is_approved = 1", (ADMIN_USER, ADMIN_PASS))
+        conn.exec_driver_sql(
+            "INSERT INTO users (username, password, role, course, year, is_approved) VALUES (%s, %s, 'Admin', 'ALL', 'ALL', 1) ON CONFLICT (username) DO UPDATE SET password = EXCLUDED.password, role = 'Admin', is_approved = 1",
+            (ADMIN_USER, ADMIN_PASS)
+        )
 
 init_db()
 
@@ -358,4 +361,3 @@ else:
                 st.success("Published!")
                 st.rerun()
             st.markdown("---")
-            show_notices(t_crs=st.session_s
