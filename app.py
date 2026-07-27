@@ -298,11 +298,11 @@ if 'joke' not in st.session_state:
 if not st.session_state['logged_in']:
     st.markdown("## 🎓 Campus Portal")
     
-    # PROMINENT PORTAL SWITCHER AT TOP OF MAIN PAGE
-    portal = st.segmented_control(
+    # SAFE HORIZONTAL RADIO SWITCHER FOR COMPATIBILITY
+    portal = st.radio(
         "Select Portal",
         options=["🎓 Student", "👨‍🏫 Teacher", "👑 Admin"],
-        default="🎓 Student"
+        horizontal=True
     )
 
     st.markdown("---")
@@ -521,4 +521,6 @@ else:
                 st.info("No pending teacher approvals.")
 
         with t_c:
-            show_cal(u_role="Admin
+            show_cal(u_role="Admin")
+
+    # ---
