@@ -4,6 +4,122 @@ import pandas as pd
 import datetime
 import random
 
+# --- PAGE CONFIG ---
+st.set_page_config(
+    page_title="Campus Portal",
+    layout="wide",
+    page_icon="🎓"
+)
+
+# --- ADVANCED UI & STYLING ---
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Page Background */
+.stApp {
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+/* Sidebar Styling */
+section[data-testid="stSidebar"] {
+    background-color: #1e293b !important;
+    border-right: 1px solid #334155;
+}
+
+/* Card Containers */
+div[data-testid="metric-container"] {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+div[data-testid="stMetricValue"] {
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    color: #818cf8 !important;
+}
+
+div[data-testid="stMetricLabel"] {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+}
+
+/* Ultra-Visible High-Contrast Buttons */
+.stButton > button {
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    padding: 10px 24px !important;
+    border: none !important;
+    transition: all 0.25s ease-in-out !important;
+    box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Primary Button Styling */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+}
+
+.stButton > button[kind="primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5) !important;
+}
+
+/* Secondary Button Styling */
+.stButton > button[kind="secondary"] {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border: 1px solid #475569 !important;
+}
+
+.stButton > button[kind="secondary"]:hover {
+    background-color: #475569 !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Input Fields Visibility */
+.stTextInput > div > div > input, 
+.stSelectbox > div > div, 
+.stTextArea > div > div > textarea {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+    border-radius: 10px !important;
+}
+
+.stTextInput > div > div > input:focus, 
+.stSelectbox > div > div:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Expanders */
+.streamlit-expanderHeader {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-radius: 12px !important;
+    border: 1px solid #334155 !important;
+    font-weight: 600 !important;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding: 10px 20px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # --- DATABASE SETUP ---
 conn = sqlite3.connect(
     'college_attendance.db',
@@ -103,9 +219,9 @@ def get_shortfall(presents, total):
         return "ℹ️ No lectures recorded yet."
     pct = (presents / total) * 100
     if pct >= 75.0:
-        return "🎉 Great job! Above 75% target."
+        return "🎉 Excellent! You are above the 75% attendance target."
     needed = (3 * total) - (4 * presents)
-    return f"⚠️ Attend next {max(0, needed)} lectures to hit 75%."
+    return f"⚠️ Attend the next {max(0, needed)} lectures continuously to reach 75%."
 
 def show_notices(
     t_crs="ALL",
@@ -114,7 +230,7 @@ def show_notices(
     u_role="",
     pfx=""
 ):
-    st.subheader("📢 Notice Board & Updates")
+    st.subheader("📢 Class Notices & Updates")
     c_flt = st.selectbox(
         "Filter Category",
         ["ALL", "Notice", "Exam", "Urgent"],
@@ -145,11 +261,12 @@ def show_notices(
                         "📎 Download Attachment",
                         data=n[4],
                         file_name=n[5],
-                        key=f"dl_{n[0]}_{pfx}"
+                        key=f"dl_{n[0]}_{pfx}",
+                        type="secondary"
                     )
                 st.caption(f"Posted by: {n[6]} ({n[7]})")
                 if u_role == "Admin" or (u_role == "Teacher" and n[6] == c_user):
-                    if st.button("🗑️ Delete Notice", key=f"del_{n[0]}_{pfx}"):
+                    if st.button("🗑️ Delete Notice", key=f"del_{n[0]}_{pfx}", type="secondary"):
                         c.execute("DELETE FROM notices WHERE id=?", (n[0],))
                         conn.commit()
                         st.success("Notice removed!")
@@ -158,17 +275,17 @@ def show_notices(
         st.info("No notices posted right now.")
 
 def show_cal(u_role=""):
-    st.subheader("📅 Academic Calendar")
+    st.subheader("📅 Academic Calendar & Holidays")
     if u_role == "Admin":
-        with st.expander("➕ Add New Event"):
-            ht = st.text_input("Event Name", key="ht")
-            hd = st.date_input("Date", datetime.date.today(), key="hd")
+        with st.expander("➕ Add New Calendar Event"):
+            ht = st.text_input("Event Title", key="ht")
+            hd = st.date_input("Event Date", datetime.date.today(), key="hd")
             hc = st.selectbox(
                 "Category",
                 ["Holiday", "Exam", "Sports", "Cultural"],
                 key="hc"
             )
-            if st.button("💾 Save Event"):
+            if st.button("💾 Save Event", type="primary"):
                 if ht:
                     c.execute(
                         "INSERT INTO holidays (title, date, category) VALUES (?, ?, ?)",
@@ -184,8 +301,8 @@ def show_cal(u_role=""):
         df = pd.DataFrame(evs, columns=["ID", "Event", "Date", "Category"])
         st.dataframe(df[["Event", "Date", "Category"]], use_container_width=True)
         if u_role == "Admin":
-            del_id = st.selectbox("Remove Event ID", [e[0] for e in evs])
-            if st.button("🗑️ Remove Event"):
+            del_id = st.selectbox("Select Event ID to Delete", [e[0] for e in evs])
+            if st.button("🗑️ Remove Event", type="secondary"):
                 c.execute("DELETE FROM holidays WHERE id=?", (del_id,))
                 conn.commit()
                 st.success("Event Deleted!")
@@ -193,13 +310,7 @@ def show_cal(u_role=""):
     else:
         st.info("No upcoming events scheduled.")
 
-# --- MAIN INTERFACE ---
-st.set_page_config(
-    page_title="College Portal",
-    layout="wide",
-    page_icon="🎓"
-)
-
+# --- STATE INITIALIZATION ---
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
     st.session_state['user'] = None
@@ -208,7 +319,7 @@ if 'logged_in' not in st.session_state:
 if 'joke' not in st.session_state:
     st.session_state['joke'] = random.choice(JOKES)
 
-st.sidebar.title("🏛️ College Portal")
+st.sidebar.title("🏛️ Campus Portal")
 
 if not st.session_state['logged_in']:
     portal = st.sidebar.radio(
@@ -217,12 +328,12 @@ if not st.session_state['logged_in']:
     )
 
     if portal == "👑 Admin":
-        st.title("👑 Admin Access")
+        st.title("👑 Admin Access Control")
         t1, t2 = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Admin Username").strip()
             p = st.text_input("Password", type="password").strip()
-            if st.button("Sign In", type="primary"):
+            if st.button("Sign In to Control Center", type="primary"):
                 c.execute(
                     "SELECT * FROM users WHERE username=? AND password=? AND role='Admin'",
                     (u, p)
@@ -238,7 +349,7 @@ if not st.session_state['logged_in']:
         with t2:
             ru = st.text_input("Username", key="au").strip()
             rp = st.text_input("New Password", type="password", key="ap").strip()
-            if st.button("Update Admin Password"):
+            if st.button("Update Admin Password", type="primary"):
                 c.execute(
                     "UPDATE users SET password=? WHERE username=? AND role='Admin'",
                     (rp, ru)
@@ -247,8 +358,8 @@ if not st.session_state['logged_in']:
                 st.success("Password Updated!")
 
     elif portal == "👨‍🏫 Teacher":
-        st.title("👨‍🏫 Teacher Portal")
-        t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Register", "🔑 Reset Password"])
+        st.title("👨‍🏫 Faculty Portal")
+        t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Register Account", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Teacher Email", key="tu").strip()
             p = st.text_input("Password", type="password", key="tp").strip()
@@ -275,20 +386,20 @@ if not st.session_state['logged_in']:
             rp = st.text_input("Password", type="password", key="rtp").strip()
             rc = st.selectbox("Assigned Course", ["BCom", "BMS", "BScIT"], key="rtc")
             ry = st.selectbox("Assigned Year", ["FY", "SY", "TY"], key="rty")
-            if st.button("Submit Registration"):
+            if st.button("Submit Registration", type="primary"):
                 try:
                     c.execute(
                         "INSERT INTO users VALUES (?, ?, 'Teacher', ?, ?, 0)",
                         (ru, rp, rc, ry)
                     )
                     conn.commit()
-                    st.success("Registered! Awaiting approval.")
+                    st.success("Registered! Awaiting admin approval.")
                 except:
                     st.error("User already registered.")
         with t3:
             fu = st.text_input("Registered Email", key="ftu").strip()
             fp = st.text_input("New Password", type="password", key="ftp").strip()
-            if st.button("Reset Password"):
+            if st.button("Reset Password", type="primary"):
                 c.execute(
                     "UPDATE users SET password=? WHERE username=? AND role='Teacher'",
                     (fp, fu)
@@ -298,7 +409,7 @@ if not st.session_state['logged_in']:
 
     elif portal == "🎓 Student":
         st.title("🎓 Student Portal")
-        t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Register", "🔑 Reset Password"])
+        t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Create Account", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Student Email", key="su").strip()
             p = st.text_input("Password", type="password", key="sp").strip()
@@ -322,7 +433,7 @@ if not st.session_state['logged_in']:
             rp = st.text_input("Password", type="password", key="rsp").strip()
             rc = st.selectbox("Course", ["BCom", "BMS", "BScIT"], key="rsc")
             ry = st.selectbox("Year", ["FY", "SY", "TY"], key="rsy")
-            if st.button("Create Account"):
+            if st.button("Create Account", type="primary"):
                 try:
                     c.execute(
                         "INSERT INTO users VALUES (?, ?, 'Student', ?, ?, 1)",
@@ -335,7 +446,7 @@ if not st.session_state['logged_in']:
         with t3:
             fu = st.text_input("Registered Email", key="fsu").strip()
             fp = st.text_input("New Password", type="password", key="fsp").strip()
-            if st.button("Reset Password "):
+            if st.button("Reset Password", type="primary"):
                 c.execute(
                     "UPDATE users SET password=? WHERE username=? AND role='Student'",
                     (fp, fu)
@@ -350,7 +461,7 @@ else:
     
     with st.sidebar.expander("⚙️ Account Settings"):
         npw = st.text_input("Change Password", type="password")
-        if st.button("Update Password"):
+        if st.button("Update Password", type="primary"):
             c.execute(
                 "UPDATE users SET password=? WHERE username=?",
                 (npw, st.session_state.get('user', ''))
@@ -364,7 +475,7 @@ else:
 
     # --- ADMIN DASHBOARD ---
     if st.session_state.get('role') == "Admin":
-        st.title("👑 Master Admin Dashboard")
+        st.title("👑 Master Admin Control Center")
         t_o, t_n, t_d, t_u, t_a, t_c = st.tabs([
             "📊 Overview", "📢 Post Notice", "⚠️ Defaulters", 
             "👥 User List", "✅ Approvals", "📅 Calendar"
@@ -384,9 +495,17 @@ else:
             c.execute("SELECT student_name, course, year, subject, date, month, status, marked_by FROM attendance")
             recs = c.fetchall()
             if recs:
-                st.dataframe(
-                    pd.DataFrame(recs, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"]),
-                    use_container_width=True
+                df_att = pd.DataFrame(recs, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"])
+                st.dataframe(df_att, use_container_width=True)
+                
+                # CSV Export Feature
+                csv = df_att.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Export Attendance Records (CSV)",
+                    data=csv,
+                    file_name="all_attendance_logs.csv",
+                    mime="text/csv",
+                    type="primary"
                 )
 
         with t_n:
@@ -395,7 +514,7 @@ else:
             nb = st.text_area("Notice Details")
             crs = st.selectbox("Target Course", ["ALL", "BCom", "BMS", "BScIT"])
             yr = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"])
-            if st.button("🚀 Publish Notice", type="primary"):
+            if st.button("🚀 Publish Notice Broadcast", type="primary"):
                 c.execute(
                     "INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Admin', ?, ?, ?)",
                     (nc, nt, nb, st.session_state.get('user', ''), crs, yr, str(datetime.date.today()))
@@ -424,10 +543,8 @@ else:
                 if pct < 75.0:
                     d_list.append([s[0], s[1], s[2], t, p, f"{pct:.1f}%"])
             if d_list:
-                st.dataframe(
-                    pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attended", "Percentage"]),
-                    use_container_width=True
-                )
+                df_def = pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attended", "Percentage"])
+                st.dataframe(df_def, use_container_width=True)
             else:
                 st.success("🎉 No defaulters found!")
 
@@ -437,143 +554,6 @@ else:
             all_u = pd.DataFrame(c.fetchall(), columns=["User", "Role", "Course", "Year", "Approved"])
             st.dataframe(all_u, use_container_width=True)
             
-            udel = st.selectbox("Select User to Remove", [u for u in all_u['User'] if u != 'naman@1125'])
-            if st.button("🗑️ Delete Selected User", type="primary"):
-                c.execute("DELETE FROM users WHERE username=?", (udel,))
-                conn.commit()
-                st.success("User Deleted!")
-                st.rerun()
-
-        with t_a:
-            st.subheader("✅ Pending Teacher Registrations")
-            c.execute("SELECT username FROM users WHERE role='Teacher' AND is_approved=0")
-            p = c.fetchall()
-            if p:
-                sel = st.selectbox("Approve Teacher", [x[0] for x in p])
-                if st.button("Approve Account", type="primary"):
-                    c.execute("UPDATE users SET is_approved=1 WHERE username=?", (sel,))
-                    conn.commit()
-                    st.success("Teacher Approved!")
-                    st.rerun()
-            else:
-                st.info("No pending approvals.")
-
-        with t_c:
-            show_cal(u_role="Admin")
-
-    # --- TEACHER DASHBOARD ---
-    elif st.session_state.get('role') == "Teacher":
-        st.title(f"👨‍🏫 Teacher Hub ({st.session_state.get('course', '')} - {st.session_state.get('year', '')})")
-        tm, tn, tr, tc = st.tabs(["📝 Mark Attendance", "📢 Class Notices", "📊 Analytics", "📅 Calendar"])
-        
-        with tm:
-            ld = st.date_input("Date", datetime.date.today())
-            ls = st.text_input("Subject Name", "General")
-            lm = ld.strftime("%B %Y")
-            
-            c.execute(
-                "SELECT username FROM users WHERE role='Student' AND course=? AND year=?",
-                (st.session_state.get('course', ''), st.session_state.get('year', ''))
-            )
-            sl = [x[0] for x in c.fetchall()]
-            
-            if sl:
-                mks = {}
-                for s in sl:
-                    mks[s] = st.radio(f"👤 {s}", ["Present", "Absent"], key=s, horizontal=True)
-                if st.button("💾 Submit Attendance", type="primary"):
-                    for s, stt in mks.items():
-                        c.execute(
-                            "INSERT INTO attendance VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
-                            (s, st.session_state.get('course', ''), st.session_state.get('year', ''), ls, str(ld), lm, stt, st.session_state.get('user', ''))
-                        )
-                    conn.commit()
-                    st.success("Attendance Saved!")
-            else:
-                st.warning("No students registered for your class.")
-
-        with tn:
-            nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="tnc")
-            nt = st.text_input("Notice Title", key="tnt")
-            nb = st.text_area("Notice Body", key="tnb")
-            if st.button("🚀 Publish to Class", type="primary"):
-                c.execute(
-                    "INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Teacher', ?, ?, ?)",
-                    (nc, nt, nb, st.session_state.get('user', ''), st.session_state.get('course', ''), st.session_state.get('year', ''), str(datetime.date.today()))
-                )
-                conn.commit()
-                st.success("Published!")
-                st.rerun()
-            st.markdown("---")
-            show_notices(
-                t_crs=st.session_state.get('course', 'ALL'),
-                t_yr=st.session_state.get('year', 'ALL'),
-                c_user=st.session_state.get('user', ''),
-                u_role="Teacher",
-                pfx="tch"
-            )
-
-        with tr:
-            c.execute(
-                "SELECT student_name, subject, date, status FROM attendance WHERE course=? AND year=?",
-                (st.session_state.get('course', ''), st.session_state.get('year', ''))
-            )
-            recs = c.fetchall()
-            if recs:
-                st.dataframe(
-                    pd.DataFrame(recs, columns=["Student", "Subject", "Date", "Status"]),
-                    use_container_width=True
-                )
-
-        with tc:
-            show_cal(u_role="Teacher")
-
-    # --- STUDENT DASHBOARD ---
-    elif st.session_state.get('role') == "Student":
-        st.title("🎓 Student Portal")
-        ta, tn, tc, tj = st.tabs(["📊 My Attendance", "📢 Announcements", "📅 Calendar", "😄 Humor Hub"])
-        
-        with ta:
-            c.execute(
-                "SELECT date, subject, status FROM attendance WHERE student_name=?",
-                (st.session_state.get('user', ''),)
-            )
-            recs = c.fetchall()
-            if recs:
-                tot = len(recs)
-                pr_count = sum(1 for r in recs if r[2] == 'Present')
-                pct = (pr_count / tot * 100) if tot > 0 else 0.0
-                
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Total Lectures", tot)
-                c2.metric("Attended", pr_count)
-                c3.metric("Percentage", f"{pct:.1f}%")
-                
-                st.progress(min(int(pct), 100))
-                st.info(get_shortfall(pr_count, tot))
-                st.markdown("---")
-                st.dataframe(
-                    pd.DataFrame(recs, columns=["Date", "Subject", "Status"]),
-                    use_container_width=True
-                )
-            else:
-                st.info("No attendance records logged for your account yet.")
-
-        with tn:
-            show_notices(
-                t_crs=st.session_state.get('course', 'ALL'),
-                t_yr=st.session_state.get('year', 'ALL'),
-                c_user=st.session_state.get('user', ''),
-                u_role="Student",
-                pfx="std"
-            )
-
-        with tc:
-            show_cal(u_role="Student")
-
-        with tj:
-            st.subheader("😄 Daily Tech & Student Humor")
-            st.info(st.session_state['joke'])
-            if st.button("🔄 Next Joke", type="primary"):
-                st.session_state['joke'] = random.choice(JOKES)
-                st.rerun()
+            udel = st.selectbox("Select User Account to Delete", [u for u in all_u['User'] if u != 'naman@1125'])
+            if st.button("🗑️ Delete Selected User Account", type="primary"):
+                c.execute("DELETE FROM users WHERE username=?", (udel
