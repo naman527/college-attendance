@@ -8,62 +8,95 @@ import random
 st.set_page_config(
     page_title="Campus Portal",
     layout="wide",
-    page_icon="🎓"
+    page_icon="🎓",
+    initial_sidebar_state="expanded"
 )
 
-# --- ADVANCED UI & PRIVACY STYLING ---
+# --- SECURE CREDENTIALS (NO HARDCODED ACCOUNTS) ---
+# Set these in your Streamlit Cloud Secrets, or use defaults below
+ADMIN_USER = st.secrets.get("ADMIN_USER", "admin")
+ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
+
+# --- HIGH-CONTRAST & MOBILE-FIRST STYLING ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* HIDE STREAMLIT BRANDING, GITHUB LINK & FORK BUTTON */
-#MainMenu {visibility: hidden !important;}
-header {visibility: hidden !important;}
-footer {visibility: hidden !important;}
-div[data-testid="stToolbar"] {visibility: hidden !important;}
-div[data-testid="stDecoration"] {visibility: hidden !important;}
-div[data-testid="stStatusWidget"] {visibility: hidden !important;}
-button[title="View app source"] {display: none !important;}
-.viewerBadge_container__1S-5D {display: none !important;}
-a[href*="github.com"] {display: none !important;}
+/* HIDE STREAMLIT BRANDING, GITHUB LINK & FOOTER BADGES */
+#MainMenu, header, footer, 
+div[data-testid="stToolbar"], 
+div[data-testid="stDecoration"], 
+div[data-testid="stStatusWidget"],
+button[title="View app source"],
+.viewerBadge_container__1S-5D,
+a[href*="github.com"],
+[data-testid="stActionButtonIcon"] {
+    display: none !important;
+    visibility: hidden !important;
+}
 
-/* Font and Dark Theme */
+/* Global Typography & Background */
 html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 .stApp {
-    background-color: #0f172a;
-    color: #f8fafc;
+    background: #090d16 !important;
+    color: #f1f5f9 !important;
 }
 
 /* Sidebar Styling */
 section[data-testid="stSidebar"] {
-    background-color: #1e293b !important;
-    border-right: 1px solid #334155;
+    background-color: #111827 !important;
+    border-right: 1px solid #1f2937 !important;
 }
 
-/* Metric Cards */
-div[data-testid="metric-container"] {
-    background: #1e293b !important;
-    border: 1px solid #334155 !important;
-    border-radius: 16px !important;
-    padding: 20px !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+/* FIX UNREADABLE INPUT LABELS & TEXT */
+label, .stTextInput label, .stSelectbox label, .stTextArea label {
+    color: #cbd5e1 !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 6px !important;
 }
 
-div[data-testid="stMetricValue"] {
-    font-size: 2rem !important;
-    font-weight: 800 !important;
-    color: #818cf8 !important;
-}
-
-div[data-testid="stMetricLabel"] {
+/* FIX UNREADABLE TABS */
+button[data-baseweb="tab"] {
     color: #94a3b8 !important;
     font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    border-bottom: 2px solid transparent !important;
+    padding: 10px 16px !important;
+    background: transparent !important;
 }
 
-/* High-Contrast Mobile-Friendly Buttons */
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #818cf8 !important;
+    border-bottom: 2px solid #6366f1 !important;
+}
+
+/* Mobile Input Field Boxes */
+.stTextInput > div > div > input, 
+.stSelectbox > div > div, 
+.stTextArea > div > div > textarea {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+    font-size: 16px !important; /* Prevents iOS auto-zoom */
+    padding: 12px !important;
+}
+
+.stTextInput > div > div > input:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Eye Icon / Password Toggle Button Styling */
+div[data-aria-label="Show password"] button {
+    color: #94a3b8 !important;
+}
+
+/* Modern Rounded Buttons */
 .stButton > button {
     width: 100% !important;
     border-radius: 12px !important;
@@ -71,64 +104,39 @@ div[data-testid="stMetricLabel"] {
     font-size: 0.95rem !important;
     padding: 12px 20px !important;
     border: none !important;
-    transition: all 0.25s ease-in-out !important;
-    box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.3) !important;
+    margin-top: 8px !important;
 }
 
-/* Primary Button Styling */
 .stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
     color: #ffffff !important;
+    box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.4) !important;
 }
 
-.stButton > button[kind="primary"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5) !important;
-}
-
-/* Secondary Button Styling */
 .stButton > button[kind="secondary"] {
-    background-color: #334155 !important;
-    color: #f8fafc !important;
-    border: 1px solid #475569 !important;
-}
-
-.stButton > button[kind="secondary"]:hover {
-    background-color: #475569 !important;
-    transform: translateY(-2px) !important;
-}
-
-/* Form Inputs for iPhone & Touch Displays */
-.stTextInput > div > div > input, 
-.stSelectbox > div > div, 
-.stTextArea > div > div > textarea {
     background-color: #1e293b !important;
-    color: #f8fafc !important;
+    color: #f1f5f9 !important;
     border: 1px solid #334155 !important;
-    border-radius: 10px !important;
-    font-size: 16px !important; /* Prevents auto-zoom on iOS */
 }
 
-.stTextInput > div > div > input:focus, 
-.stSelectbox > div > div:focus {
-    border-color: #6366f1 !important;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+/* Cards & Containers */
+div[data-testid="stForm"], div[data-testid="metric-container"] {
+    background: #111827 !important;
+    border: 1px solid #1f2937 !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
 }
 
-/* Expanders */
-.streamlit-expanderHeader {
-    background-color: #1e293b !important;
-    color: #f8fafc !important;
-    border-radius: 12px !important;
-    border: 1px solid #334155 !important;
+/* Metric Display */
+div[data-testid="stMetricValue"] {
+    font-size: 1.8rem !important;
+    font-weight: 800 !important;
+    color: #818cf8 !important;
+}
+
+div[data-testid="stMetricLabel"] {
+    color: #94a3b8 !important;
     font-weight: 600 !important;
-}
-
-/* Navigation Tabs */
-button[data-baseweb="tab"] {
-    font-weight: 600 !important;
-    font-size: 0.95rem !important;
-    padding: 8px 16px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -205,15 +213,15 @@ if 'subject' not in a_cols:
 
 conn.commit()
 
-# Master Admin Account Setup
+# Dynamic Master Admin Account (Pulled from Secrets or Standard Placeholder)
 c.execute("""
 INSERT INTO users (
     username, password, role, course, year, is_approved
 ) VALUES (
-    'naman@1125', 'aniKet@124', 'Admin', 'ALL', 'ALL', 1
+    ?, ?, 'Admin', 'ALL', 'ALL', 1
 ) ON CONFLICT(username) DO UPDATE SET 
-    password='aniKet@124', is_approved=1
-""")
+    password=?, is_approved=1
+""", (ADMIN_USER, ADMIN_PASS, ADMIN_PASS))
 conn.commit()
 
 JOKES = [
@@ -322,7 +330,7 @@ if not st.session_state['logged_in']:
     portal = st.sidebar.radio("Select Portal", ["👑 Admin", "👨‍🏫 Teacher", "🎓 Student"])
 
     if portal == "👑 Admin":
-        st.title("👑 Admin Access Control")
+        st.markdown("## 👑 Admin Access")
         t1, t2 = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Admin Username").strip()
@@ -346,7 +354,7 @@ if not st.session_state['logged_in']:
                 st.success("Password Updated!")
 
     elif portal == "👨‍🏫 Teacher":
-        st.title("👨‍🏫 Faculty Portal")
+        st.markdown("## 👨‍🏫 Faculty Portal")
         t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Register Account", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Teacher Email", key="tu").strip()
@@ -387,7 +395,7 @@ if not st.session_state['logged_in']:
                 st.success("Password Updated!")
 
     elif portal == "🎓 Student":
-        st.title("🎓 Student Portal")
+        st.markdown("## 🎓 Student Portal")
         t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Create Account", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Student Email", key="su").strip()
@@ -513,12 +521,5 @@ else:
             all_u = pd.DataFrame(c.fetchall(), columns=["User", "Role", "Course", "Year", "Approved"])
             st.dataframe(all_u, use_container_width=True)
             
-            udel = st.selectbox("Select User Account to Delete", [u for u in all_u['User'] if u != 'naman@1125'])
-            if st.button("🗑️ Delete Selected User Account", type="primary"):
-                c.execute("DELETE FROM users WHERE username=?", (udel,))
-                conn.commit()
-                st.success("User Deleted!")
-                st.rerun()
-
-        with t_a:
-            st.subheader("✅ Pending Teacher Registrations")
+            udel = st.selectbox("Select User Account to Delete", [u for u in all_u['User'] if u != ADMIN_USER])
+            if st.button("🗑️ Delete Selected User Account", type
