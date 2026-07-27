@@ -361,4 +361,4 @@ else:
             nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="tnc")
             nt = st.text_input("Notice Title", key="tnt")
             nb = st.text_area("Notice Body", key="tnb")
-            if st.button("🚀 Publish Notice to Class", key="tch_pub_
+            if st.button("Publish Notice to Class", key="tch_pub_not
