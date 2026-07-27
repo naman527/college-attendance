@@ -361,4 +361,67 @@ else:
             nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="tnc")
             nt = st.text_input("Notice Title", key="tnt")
             nb = st.text_area("Notice Body", key="tnb")
-            if st.button("Publish Notice to Class", key="tch_pub_not
+            if st.button("Publish Notice to Class", key="tch_pub_notice"):
+                with engine.begin() as conn:
+                    conn.execute(
+                        text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Teacher', :tc, :ty, :d)"),
+                        {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": st.session_state.get('course', ''), "ty": st.session_state.get('year', ''), "d": str(datetime.date.today())}
+                    )
+                st.success("Published!")
+                st.rerun()
+            st.markdown("---")
+            show_notices(t_crs=st.session_state.get('course', 'ALL'), t_yr=st.session_state.get('year', 'ALL'), c_user=st.session_state.get('user', ''), u_role="Teacher", pfx="tch")
+
+        elif teacher_menu == "📊 Class Analytics":
+            with engine.connect() as conn:
+                recs = conn.execute(text("SELECT student_name, subject, date, status FROM attendance WHERE course=:c AND year=:y"), {"c": st.session_state.get('course', ''), "y": st.session_state.get('year', '')}).fetchall()
+            
+            df_class = pd.DataFrame(recs, columns=["Student", "Subject", "Date", "Status"]) if recs else pd.DataFrame(columns=["Student", "Subject", "Date", "Status"])
+            st.dataframe(df_class, use_container_width=True)
+            if not df_class.empty:
+                st.bar_chart(df_class['Status'].value_counts())
+            else:
+                st.info("ℹ️ No attendance logs recorded for this class yet. Go to 'Mark Attendance' to add some records.")
+
+        elif teacher_menu == "📅 Calendar":
+            show_cal(u_role="Teacher")
+
+    elif role == "Student":
+        st.title("🎓 Student Dashboard")
+        student_menu = st.radio("Menu", ["📊 My Attendance", "📢 Class Announcements", "📅 Academic Calendar", "😄 Student Lounge"], horizontal=True, key="student_menu_radio")
+        st.markdown("---")
+        
+        if student_menu == "📊 My Attendance":
+            with engine.connect() as conn:
+                recs = conn.execute(text("SELECT date, subject, status FROM attendance WHERE student_name=:u"), {"u": st.session_state.get('user', '')}).fetchall()
+            
+            tot = len(recs)
+            pr_count = sum(1 for r in recs if r[2] == 'Present') if recs else 0
+            pct = (pr_count / tot * 100) if tot > 0 else 0.0
+            
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total Lectures", tot)
+            c2.metric("Lectures Attended", pr_count)
+            c3.metric("Attendance Score", f"{pct:.1f}%")
+            st.progress(min(int(pct), 100))
+            st.info(get_shortfall(pr_count, tot))
+            st.markdown("---")
+            
+            df_std = pd.DataFrame(recs, columns=["Date", "Subject", "Status"]) if recs else pd.DataFrame(columns=["Date", "Subject", "Status"])
+            srch = st.text_input("🔍 Quick Filter Logs", "", key="std_srch_att")
+            if srch and not df_std.empty:
+                df_std = df_std[df_std['Subject'].str.contains(srch, case=False) | df_std['Date'].str.contains(srch, case=False)]
+            st.dataframe(df_std, use_container_width=True)
+
+        elif student_menu == "📢 Class Announcements":
+            show_notices(t_crs=st.session_state.get('course', 'ALL'), t_yr=st.session_state.get('year', 'ALL'), c_user=st.session_state.get('user', ''), u_role="Student", pfx="std")
+
+        elif student_menu == "📅 Academic Calendar":
+            show_cal(u_role="Student")
+
+        elif student_menu == "😄 Student Lounge":
+            st.subheader("😄 Student Tech Humor")
+            st.info(st.session_state['joke'])
+            if st.button("🔄 Get Another Joke", key="std_joke_btn"):
+                st.session_state['joke'] = random.choice(JOKES)
+                st.rerun()
