@@ -9,14 +9,14 @@ st.set_page_config(
     page_title="Campus Portal",
     layout="wide",
     page_icon="🎓",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# --- SECURE CREDENTIALS (NO HARDCODED ACCOUNTS) ---
+# --- SECURE CREDENTIALS ---
 ADMIN_USER = st.secrets.get("ADMIN_USER", "admin")
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 
-# --- HIGH-CONTRAST MOBILE-FIRST CSS ---
+# --- CLEAN HIGH-CONTRAST MOBILE-FIRST CSS ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -34,65 +34,54 @@ a[href*="github.com"],
     visibility: hidden !important;
 }
 
-/* Global Typography & Background */
+/* Global Light Clean Theme */
 html, body, [class*="css"] {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 .stApp {
-    background: #090d16 !important;
-    color: #f1f5f9 !important;
-}
-
-/* Sidebar Styling */
-section[data-testid="stSidebar"] {
-    background-color: #111827 !important;
-    border-right: 1px solid #1f2937 !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
 }
 
 /* HIGH-CONTRAST INPUT LABELS */
 label, .stTextInput label, .stSelectbox label, .stTextArea label {
-    color: #f8fafc !important;
-    font-size: 0.92rem !important;
-    font-weight: 600 !important;
+    color: #1e293b !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
     margin-bottom: 6px !important;
 }
 
 /* HIGH-CONTRAST TABS */
 button[data-baseweb="tab"] {
-    color: #94a3b8 !important;
-    font-weight: 600 !important;
-    font-size: 0.95rem !important;
+    color: #64748b !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
     border-bottom: 2px solid transparent !important;
     padding: 10px 16px !important;
     background: transparent !important;
 }
 
 button[data-baseweb="tab"][aria-selected="true"] {
-    color: #818cf8 !important;
-    border-bottom: 2px solid #6366f1 !important;
+    color: #4f46e5 !important;
+    border-bottom: 3px solid #4f46e5 !important;
 }
 
 /* Mobile Input Field Boxes */
 .stTextInput > div > div > input, 
 .stSelectbox > div > div, 
 .stTextArea > div > div > textarea {
-    background-color: #1e293b !important;
-    color: #ffffff !important;
-    border: 1px solid #334155 !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 2px solid #cbd5e1 !important;
     border-radius: 12px !important;
     font-size: 16px !important;
     padding: 12px !important;
 }
 
 .stTextInput > div > div > input:focus {
-    border-color: #6366f1 !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
-}
-
-/* Eye Icon / Password Toggle Button Styling */
-div[data-aria-label="Show password"] button {
-    color: #94a3b8 !important;
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
 }
 
 /* Buttons */
@@ -100,32 +89,33 @@ div[data-aria-label="Show password"] button {
     width: 100% !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
-    font-size: 0.95rem !important;
+    font-size: 1rem !important;
     padding: 12px 20px !important;
     border: none !important;
-    margin-top: 8px !important;
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    margin-top: 10px !important;
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3) !important;
+    box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.25) !important;
 }
 
-/* Cards & Containers */
+/* Form Container Card */
 div[data-testid="stForm"], div[data-testid="metric-container"] {
-    background: #111827 !important;
-    border: 1px solid #1f2937 !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
     border-radius: 16px !important;
-    padding: 20px !important;
+    padding: 24px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Metric Display */
 div[data-testid="stMetricValue"] {
     font-size: 1.8rem !important;
     font-weight: 800 !important;
-    color: #818cf8 !important;
+    color: #4f46e5 !important;
 }
 
 div[data-testid="stMetricLabel"] {
-    color: #94a3b8 !important;
+    color: #64748b !important;
     font-weight: 600 !important;
 }
 </style>
@@ -203,7 +193,7 @@ if 'subject' not in a_cols:
 
 conn.commit()
 
-# Dynamic Admin User (Uses Secrets or generic default)
+# Dynamic Admin User
 c.execute("""
 INSERT INTO users (
     username, password, role, course, year, is_approved
@@ -304,37 +294,59 @@ if 'logged_in' not in st.session_state:
 if 'joke' not in st.session_state:
     st.session_state['joke'] = random.choice(JOKES)
 
-st.sidebar.title("🏛️ Campus Portal")
-
+# --- LOGIN SCREEN WITH VISIBLE TOP SWITCHER ---
 if not st.session_state['logged_in']:
-    portal = st.sidebar.radio("Select Portal", ["👑 Admin", "👨‍🏫 Teacher", "🎓 Student"])
+    st.markdown("## 🎓 Campus Portal")
+    
+    # PROMINENT PORTAL SWITCHER AT TOP OF MAIN PAGE
+    portal = st.segmented_control(
+        "Select Portal",
+        options=["🎓 Student", "👨‍🏫 Teacher", "👑 Admin"],
+        default="🎓 Student"
+    )
 
-    if portal == "👑 Admin":
-        st.markdown("## 👑 Admin Access")
-        t1, t2 = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
+    st.markdown("---")
+
+    if portal == "🎓 Student":
+        st.markdown("### 🎓 Student Access")
+        t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Create Account", "🔑 Reset Password"])
         with t1:
-            u = st.text_input("Admin Username").strip()
-            p = st.text_input("Password", type="password").strip()
-            if st.button("Sign In to Control Center"):
-                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (u, p))
+            u = st.text_input("Student Email", key="su").strip()
+            p = st.text_input("Password", type="password", key="sp").strip()
+            if st.button("Student Sign In"):
+                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Student'", (u, p))
                 res = c.fetchone()
                 if res:
                     st.session_state['logged_in'] = True
                     st.session_state['user'] = res[0]
                     st.session_state['role'] = res[2]
+                    st.session_state['course'] = res[3]
+                    st.session_state['year'] = res[4]
                     st.rerun()
                 else:
-                    st.error("Invalid Admin Credentials")
+                    st.error("Invalid Credentials")
         with t2:
-            ru = st.text_input("Username", key="au").strip()
-            rp = st.text_input("New Password", type="password", key="ap").strip()
-            if st.button("Update Admin Password"):
-                c.execute("UPDATE users SET password=? WHERE username=? AND role='Admin'", (rp, ru))
+            ru = st.text_input("Email ID", key="rsu").strip()
+            rp = st.text_input("Password", type="password", key="rsp").strip()
+            rc = st.selectbox("Course", ["BCom", "BMS", "BScIT"], key="rsc")
+            ry = st.selectbox("Year", ["FY", "SY", "TY"], key="rsy")
+            if st.button("Create Account"):
+                try:
+                    c.execute("INSERT INTO users VALUES (?, ?, 'Student', ?, ?, 1)", (ru, rp, rc, ry))
+                    conn.commit()
+                    st.success("Account Created! Sign in now.")
+                except:
+                    st.error("User already exists.")
+        with t3:
+            fu = st.text_input("Registered Email", key="fsu").strip()
+            fp = st.text_input("New Password", type="password", key="fsp").strip()
+            if st.button("Reset Password"):
+                c.execute("UPDATE users SET password=? WHERE username=? AND role='Student'", (fp, fu))
                 conn.commit()
                 st.success("Password Updated!")
 
     elif portal == "👨‍🏫 Teacher":
-        st.markdown("## 👨‍🏫 Faculty Portal")
+        st.markdown("### 👨‍🏫 Faculty Access")
         t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Register Account", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Teacher Email", key="tu").strip()
@@ -374,44 +386,31 @@ if not st.session_state['logged_in']:
                 conn.commit()
                 st.success("Password Updated!")
 
-    elif portal == "🎓 Student":
-        st.markdown("## 🎓 Student Portal")
-        t1, t2, t3 = st.tabs(["🔐 Sign In", "📝 Create Account", "🔑 Reset Password"])
+    elif portal == "👑 Admin":
+        st.markdown("### 👑 Admin Access")
+        t1, t2 = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
         with t1:
-            u = st.text_input("Student Email", key="su").strip()
-            p = st.text_input("Password", type="password", key="sp").strip()
-            if st.button("Student Sign In"):
-                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Student'", (u, p))
+            u = st.text_input("Admin Username").strip()
+            p = st.text_input("Password", type="password").strip()
+            if st.button("Sign In to Control Center"):
+                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (u, p))
                 res = c.fetchone()
                 if res:
                     st.session_state['logged_in'] = True
                     st.session_state['user'] = res[0]
                     st.session_state['role'] = res[2]
-                    st.session_state['course'] = res[3]
-                    st.session_state['year'] = res[4]
                     st.rerun()
                 else:
-                    st.error("Invalid Credentials")
+                    st.error("Invalid Admin Credentials")
         with t2:
-            ru = st.text_input("Email ID", key="rsu").strip()
-            rp = st.text_input("Password", type="password", key="rsp").strip()
-            rc = st.selectbox("Course", ["BCom", "BMS", "BScIT"], key="rsc")
-            ry = st.selectbox("Year", ["FY", "SY", "TY"], key="rsy")
-            if st.button("Create Account"):
-                try:
-                    c.execute("INSERT INTO users VALUES (?, ?, 'Student', ?, ?, 1)", (ru, rp, rc, ry))
-                    conn.commit()
-                    st.success("Account Created! Sign in now.")
-                except:
-                    st.error("User already exists.")
-        with t3:
-            fu = st.text_input("Registered Email", key="fsu").strip()
-            fp = st.text_input("New Password", type="password", key="fsp").strip()
-            if st.button("Reset Password"):
-                c.execute("UPDATE users SET password=? WHERE username=? AND role='Student'", (fp, fu))
+            ru = st.text_input("Username", key="au").strip()
+            rp = st.text_input("New Password", type="password", key="ap").strip()
+            if st.button("Update Admin Password"):
+                c.execute("UPDATE users SET password=? WHERE username=? AND role='Admin'", (rp, ru))
                 conn.commit()
                 st.success("Password Updated!")
 
+# --- LOGGED-IN DASHBOARDS ---
 else:
     st.sidebar.markdown(f"👤 **User:** `{st.session_state.get('user', '')}`")
     st.sidebar.markdown(f"🏷️ **Role:** `{st.session_state.get('role', '')}`")
@@ -520,4 +519,6 @@ else:
                     st.rerun()
             else:
                 st.info("No pending teacher approvals.")
-                
+
+        with t_c:
+            show_cal(u_role="Admin
