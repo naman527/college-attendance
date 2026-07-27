@@ -12,9 +12,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- SECURE CREDENTIALS ---
-ADMIN_USER = st.secrets.get("ADMIN_USER", "admin")
-ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
+# --- HARDCODED ADMIN CREDENTIALS ---
+ADMIN_USER = "9321481833"
+ADMIN_PASS = "aniKet@1124"
 
 # --- CLEAN HIGH-CONTRAST MOBILE-FIRST CSS ---
 st.markdown("""
@@ -96,11 +96,6 @@ button[data-baseweb="tab"][aria-selected="true"] {
     background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
     color: #ffffff !important;
     box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.25) !important;
-}
-
-/* Logout Button Special Color */
-button[kind="secondary"] {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
 }
 
 /* Form Container Card */
@@ -198,7 +193,7 @@ if 'subject' not in a_cols:
 
 conn.commit()
 
-# Ensure Admin Account is Always Correctly Upserted
+# Ensure Exact Admin Credentials Exist
 c.execute("""
 INSERT INTO users (
     username, password, role, course, year, is_approved
@@ -392,7 +387,7 @@ if not st.session_state['logged_in']:
 
     elif portal == "👑 Admin":
         st.markdown("### 👑 Admin Access")
-        st.info(f"💡 Default Admin Username configured in secrets: `{ADMIN_USER}`")
+        st.info("💡 Use Username: `9321481833` and Password: `aniKet@1124`")
         t1, t2 = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Admin Username", key="ad_u").strip()
@@ -406,7 +401,7 @@ if not st.session_state['logged_in']:
                     st.session_state['role'] = res[2]
                     st.rerun()
                 else:
-                    st.error("Invalid Admin Credentials. Make sure you are using your Streamlit Secrets username & password.")
+                    st.error("Invalid Admin Credentials. Please check username & password.")
         with t2:
             ru = st.text_input("Username to Force Reset", key="au").strip()
             rp = st.text_input("New Admin Password", type="password", key="ap").strip()
@@ -417,7 +412,6 @@ if not st.session_state['logged_in']:
 
 # --- LOGGED-IN DASHBOARDS WITH PROMINENT LOGOUT BUTTON ---
 else:
-    # PROMINENT TOP LOGOUT & USER INFO BAR IN MAIN CONTAINER (Guaranteed Visibility)
     col_info, col_logout = st.columns([3, 1])
     with col_info:
         st.markdown(f"👤 Logged in as: **{st.session_state.get('user', '')}** | Role: **{st.session_state.get('role', '')}**")
@@ -430,7 +424,6 @@ else:
             
     st.markdown("---")
 
-    # Sidebar Logout / Settings as well
     st.sidebar.markdown(f"👤 **User:** `{st.session_state.get('user', '')}`")
     st.sidebar.markdown(f"🏷️ **Role:** `{st.session_state.get('role', '')}`")
     st.sidebar.markdown("---")
@@ -467,19 +460,35 @@ else:
             c2.metric("Overall Attendance Rate", f"{(prs/att*100) if att>0 else 0:.1f}%")
             
             st.markdown("---")
-            c.execute("SELECT student_name, course, year, subject, date, month, status, marked_by FROM attendance")
-            recs = c.fetchall()
-            if recs:
-                df_att = pd.DataFrame(recs, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"])
-                st.dataframe(df_att, use_container_width=True)
+            st.subheader("📥 Download Class-Specific Attendance CSV")
+            dl_course = st.selectbox("Select Course for Download", ["ALL", "BCom", "BMS", "BScIT"], key="dl_crs")
+            dl_year = st.selectbox("Select Year for Download", ["ALL", "FY", "SY", "TY"], key="dl_yr")
+            
+            q_dl = "SELECT student_name, course, year, subject, date, month, status, marked_by FROM attendance WHERE 1=1"
+            p_dl = []
+            if dl_course != "ALL":
+                q_dl += " AND course=?"
+                p_dl.append(dl_course)
+            if dl_year != "ALL":
+                q_dl += " AND year=?"
+                p_dl.append(dl_year)
                 
-                csv = df_att.to_csv(index=False).encode('utf-8')
+            c.execute(q_dl, p_dl)
+            recs_dl = c.fetchall()
+            
+            if recs_dl:
+                df_dl = pd.DataFrame(recs_dl, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"])
+                st.dataframe(df_dl, use_container_width=True)
+                
+                csv_data = df_dl.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label="📥 Export Attendance Records (CSV)",
-                    data=csv,
-                    file_name="all_attendance_logs.csv",
+                    label=f"📥 Download CSV for {dl_course} - {dl_year}",
+                    data=csv_data,
+                    file_name=f"attendance_{dl_course}_{dl_year}.csv",
                     mime="text/csv"
                 )
+            else:
+                st.info("No attendance records found for this specific class selection.")
 
         with t_n:
             nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"])
@@ -510,12 +519,3 @@ else:
                     d_list.append([s[0], s[1], s[2], t, p, f"{pct:.1f}%"])
             if d_list:
                 df_def = pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attended", "Percentage"])
-                st.dataframe(df_def, use_container_width=True)
-            else:
-                st.success("🎉 No defaulters found!")
-
-        with t_u:
-            st.subheader("👥 System User Management")
-            c.execute("SELECT username, role, course, year, is_approved FROM users")
-            all_u = pd.DataFrame(c.fetchall(), columns=["User", "Role", "Course", "Year", "Approved"])
-            s
