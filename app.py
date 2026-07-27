@@ -5,13 +5,60 @@ import datetime
 import random
 
 # --- DATABASE SETUP ---
-conn = sqlite3.connect('college_attendance.db', check_same_thread=False)
+conn = sqlite3.connect(
+    'college_attendance.db',
+    check_same_thread=False
+)
 c = conn.cursor()
 
-c.execute("CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT, role TEXT, course TEXT, year TEXT, is_approved INTEGER)")
-c.execute("CREATE TABLE IF NOT EXISTS attendance (student_name TEXT, course TEXT, year TEXT, subject TEXT, date TEXT, month TEXT, status TEXT, marked_by TEXT)")
-c.execute("CREATE TABLE IF NOT EXISTS notices (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, title TEXT, content TEXT, file_data BLOB, file_name TEXT, posted_by TEXT, role TEXT, target_course TEXT, target_year TEXT, date TEXT)")
-c.execute("CREATE TABLE IF NOT EXISTS holidays (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, date TEXT, category TEXT)")
+c.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT,
+    role TEXT,
+    course TEXT,
+    year TEXT,
+    is_approved INTEGER
+)
+""")
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS attendance (
+    student_name TEXT,
+    course TEXT,
+    year TEXT,
+    subject TEXT,
+    date TEXT,
+    month TEXT,
+    status TEXT,
+    marked_by TEXT
+)
+""")
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS notices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT,
+    title TEXT,
+    content TEXT,
+    file_data BLOB,
+    file_name TEXT,
+    posted_by TEXT,
+    role TEXT,
+    target_course TEXT,
+    target_year TEXT,
+    date TEXT
+)
+""")
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS holidays (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    date TEXT,
+    category TEXT
+)
+""")
 
 # Schema Migrations
 c.execute("PRAGMA table_info(notices)")
@@ -33,15 +80,22 @@ if 'subject' not in a_cols:
 conn.commit()
 
 # Master Admin Setup
-c.execute("INSERT INTO users (username, password, role, course, year, is_approved) VALUES ('naman@1125', 'aniKet@124', 'Admin', 'ALL', 'ALL', 1) ON CONFLICT(username) DO UPDATE SET password='aniKet@124', is_approved=1")
+c.execute("""
+INSERT INTO users (
+    username, password, role, course, year, is_approved
+) VALUES (
+    'naman@1125', 'aniKet@124', 'Admin', 'ALL', 'ALL', 1
+) ON CONFLICT(username) DO UPDATE SET 
+    password='aniKet@124', is_approved=1
+""")
 conn.commit()
 
 JOKES = [
     "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
-    "Student in exam: Is this a trick question? Professor: No, it's a memory test! 🧠",
-    "Why was the computer late for class? It had a hard drive! 💻",
+    "Student in exam: Is this a trick question? Prof: No, it's a test! 🧠",
+    "Why was the computer late? It had a hard drive! 💻",
     "Teacher: Name two elements. Student: Unobtanium and surprise elements! 🧪",
-    "Why don't college students like math? Because it has too many problems! 📐"
+    "Why don't students like math? Too many problems! 📐"
 ]
 
 def get_shortfall(presents, total):
@@ -49,13 +103,23 @@ def get_shortfall(presents, total):
         return "ℹ️ No lectures recorded yet."
     pct = (presents / total) * 100
     if pct >= 75.0:
-        return "🎉 Great job! You are above the 75% attendance target."
+        return "🎉 Great job! Above 75% target."
     needed = (3 * total) - (4 * presents)
-    return f"⚠️ Attend the next {max(0, needed)} lectures continuously to reach 75%."
+    return f"⚠️ Attend next {max(0, needed)} lectures to hit 75%."
 
-def show_notices(t_crs="ALL", t_yr="ALL", c_user="", u_role="", pfx=""):
+def show_notices(
+    t_crs="ALL",
+    t_yr="ALL",
+    c_user="",
+    u_role="",
+    pfx=""
+):
     st.subheader("📢 Notice Board & Updates")
-    c_flt = st.selectbox("Filter Category", ["ALL", "Notice", "Exam", "Urgent"], key=f"c_{pfx}")
+    c_flt = st.selectbox(
+        "Filter Category",
+        ["ALL", "Notice", "Exam", "Urgent"],
+        key=f"c_{pfx}"
+    )
     
     q = "SELECT id, category, title, content, file_data, file_name, posted_by, role, date FROM notices WHERE 1=1"
     prms = []
@@ -77,7 +141,12 @@ def show_notices(t_crs="ALL", t_yr="ALL", c_user="", u_role="", pfx=""):
             with st.expander(f"📌 [{n[1]}] {n[2]} ({n[8]})"):
                 st.write(n[3])
                 if n[4] and n[5]:
-                    st.download_button("📎 Download Attachment", data=n[4], file_name=n[5], key=f"dl_{n[0]}_{pfx}")
+                    st.download_button(
+                        "📎 Download Attachment",
+                        data=n[4],
+                        file_name=n[5],
+                        key=f"dl_{n[0]}_{pfx}"
+                    )
                 st.caption(f"Posted by: {n[6]} ({n[7]})")
                 if u_role == "Admin" or (u_role == "Teacher" and n[6] == c_user):
                     if st.button("🗑️ Delete Notice", key=f"del_{n[0]}_{pfx}"):
@@ -94,10 +163,17 @@ def show_cal(u_role=""):
         with st.expander("➕ Add New Event"):
             ht = st.text_input("Event Name", key="ht")
             hd = st.date_input("Date", datetime.date.today(), key="hd")
-            hc = st.selectbox("Category", ["Holiday", "Exam", "Sports", "Cultural"], key="hc")
+            hc = st.selectbox(
+                "Category",
+                ["Holiday", "Exam", "Sports", "Cultural"],
+                key="hc"
+            )
             if st.button("💾 Save Event"):
                 if ht:
-                    c.execute("INSERT INTO holidays (title, date, category) VALUES (?, ?, ?)", (ht, str(hd), hc))
+                    c.execute(
+                        "INSERT INTO holidays (title, date, category) VALUES (?, ?, ?)",
+                        (ht, str(hd), hc)
+                    )
                     conn.commit()
                     st.success("Event Added!")
                     st.rerun()
@@ -118,7 +194,11 @@ def show_cal(u_role=""):
         st.info("No upcoming events scheduled.")
 
 # --- MAIN INTERFACE ---
-st.set_page_config(page_title="College Portal", layout="wide", page_icon="🎓")
+st.set_page_config(
+    page_title="College Portal",
+    layout="wide",
+    page_icon="🎓"
+)
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -131,7 +211,10 @@ if 'joke' not in st.session_state:
 st.sidebar.title("🏛️ College Portal")
 
 if not st.session_state['logged_in']:
-    portal = st.sidebar.radio("Select Portal", ["👑 Admin", "👨‍🏫 Teacher", "🎓 Student"])
+    portal = st.sidebar.radio(
+        "Select Portal",
+        ["👑 Admin", "👨‍🏫 Teacher", "🎓 Student"]
+    )
 
     if portal == "👑 Admin":
         st.title("👑 Admin Access")
@@ -140,7 +223,10 @@ if not st.session_state['logged_in']:
             u = st.text_input("Admin Username").strip()
             p = st.text_input("Password", type="password").strip()
             if st.button("Sign In", type="primary"):
-                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (u, p))
+                c.execute(
+                    "SELECT * FROM users WHERE username=? AND password=? AND role='Admin'",
+                    (u, p)
+                )
                 res = c.fetchone()
                 if res:
                     st.session_state['logged_in'] = True
@@ -153,7 +239,10 @@ if not st.session_state['logged_in']:
             ru = st.text_input("Username", key="au").strip()
             rp = st.text_input("New Password", type="password", key="ap").strip()
             if st.button("Update Admin Password"):
-                c.execute("UPDATE users SET password=? WHERE username=? AND role='Admin'", (rp, ru))
+                c.execute(
+                    "UPDATE users SET password=? WHERE username=? AND role='Admin'",
+                    (rp, ru)
+                )
                 conn.commit()
                 st.success("Password Updated!")
 
@@ -164,7 +253,10 @@ if not st.session_state['logged_in']:
             u = st.text_input("Teacher Email", key="tu").strip()
             p = st.text_input("Password", type="password", key="tp").strip()
             if st.button("Teacher Sign In", type="primary"):
-                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Teacher'", (u, p))
+                c.execute(
+                    "SELECT * FROM users WHERE username=? AND password=? AND role='Teacher'",
+                    (u, p)
+                )
                 res = c.fetchone()
                 if res:
                     if res[5] == 0:
@@ -185,16 +277,22 @@ if not st.session_state['logged_in']:
             ry = st.selectbox("Assigned Year", ["FY", "SY", "TY"], key="rty")
             if st.button("Submit Registration"):
                 try:
-                    c.execute("INSERT INTO users VALUES (?, ?, 'Teacher', ?, ?, 0)", (ru, rp, rc, ry))
+                    c.execute(
+                        "INSERT INTO users VALUES (?, ?, 'Teacher', ?, ?, 0)",
+                        (ru, rp, rc, ry)
+                    )
                     conn.commit()
-                    st.success("Registered! Awaiting admin approval.")
+                    st.success("Registered! Awaiting approval.")
                 except:
                     st.error("User already registered.")
         with t3:
             fu = st.text_input("Registered Email", key="ftu").strip()
             fp = st.text_input("New Password", type="password", key="ftp").strip()
             if st.button("Reset Password"):
-                c.execute("UPDATE users SET password=? WHERE username=? AND role='Teacher'", (fp, fu))
+                c.execute(
+                    "UPDATE users SET password=? WHERE username=? AND role='Teacher'",
+                    (fp, fu)
+                )
                 conn.commit()
                 st.success("Password Updated!")
 
@@ -205,7 +303,10 @@ if not st.session_state['logged_in']:
             u = st.text_input("Student Email", key="su").strip()
             p = st.text_input("Password", type="password", key="sp").strip()
             if st.button("Student Sign In", type="primary"):
-                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Student'", (u, p))
+                c.execute(
+                    "SELECT * FROM users WHERE username=? AND password=? AND role='Student'",
+                    (u, p)
+                )
                 res = c.fetchone()
                 if res:
                     st.session_state['logged_in'] = True
@@ -223,28 +324,37 @@ if not st.session_state['logged_in']:
             ry = st.selectbox("Year", ["FY", "SY", "TY"], key="rsy")
             if st.button("Create Account"):
                 try:
-                    c.execute("INSERT INTO users VALUES (?, ?, 'Student', ?, ?, 1)", (ru, rp, rc, ry))
+                    c.execute(
+                        "INSERT INTO users VALUES (?, ?, 'Student', ?, ?, 1)",
+                        (ru, rp, rc, ry)
+                    )
                     conn.commit()
-                    st.success("Account Created! You can sign in now.")
+                    st.success("Account Created! Sign in now.")
                 except:
                     st.error("User already exists.")
         with t3:
             fu = st.text_input("Registered Email", key="fsu").strip()
             fp = st.text_input("New Password", type="password", key="fsp").strip()
             if st.button("Reset Password "):
-                c.execute("UPDATE users SET password=? WHERE username=? AND role='Student'", (fp, fu))
+                c.execute(
+                    "UPDATE users SET password=? WHERE username=? AND role='Student'",
+                    (fp, fu)
+                )
                 conn.commit()
                 st.success("Password Updated!")
 
 else:
-    st.sidebar.markdown(f"👤 **Logged in as:** `{st.session_state['user']}`")
-    st.sidebar.markdown(f"🏷️ **Role:** `{st.session_state['role']}`")
+    st.sidebar.markdown(f"👤 **User:** `{st.session_state.get('user', '')}`")
+    st.sidebar.markdown(f"🏷️ **Role:** `{st.session_state.get('role', '')}`")
     st.sidebar.markdown("---")
     
     with st.sidebar.expander("⚙️ Account Settings"):
         npw = st.text_input("Change Password", type="password")
         if st.button("Update Password"):
-            c.execute("UPDATE users SET password=? WHERE username=?", (npw, st.session_state['user']))
+            c.execute(
+                "UPDATE users SET password=? WHERE username=?",
+                (npw, st.session_state.get('user', ''))
+            )
             conn.commit()
             st.success("Updated!")
 
@@ -252,10 +362,13 @@ else:
         st.session_state['logged_in'] = False
         st.rerun()
 
-    # --- ADMIN CONTROL PANEL ---
-    if st.session_state['role'] == "Admin":
+    # --- ADMIN DASHBOARD ---
+    if st.session_state.get('role') == "Admin":
         st.title("👑 Master Admin Dashboard")
-        t_o, t_n, t_d, t_u, t_a, t_c = st.tabs(["📊 Overview", "📢 Post Notice", "⚠️ Defaulters", "👥 User List", "✅ Approvals", "📅 Calendar"])
+        t_o, t_n, t_d, t_u, t_a, t_c = st.tabs([
+            "📊 Overview", "📢 Post Notice", "⚠️ Defaulters", 
+            "👥 User List", "✅ Approvals", "📅 Calendar"
+        ])
         
         with t_o:
             c.execute("SELECT COUNT(*) FROM attendance")
@@ -271,7 +384,10 @@ else:
             c.execute("SELECT student_name, course, year, subject, date, month, status, marked_by FROM attendance")
             recs = c.fetchall()
             if recs:
-                st.dataframe(pd.DataFrame(recs, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"]), use_container_width=True)
+                st.dataframe(
+                    pd.DataFrame(recs, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"]),
+                    use_container_width=True
+                )
 
         with t_n:
             nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"])
@@ -280,13 +396,19 @@ else:
             crs = st.selectbox("Target Course", ["ALL", "BCom", "BMS", "BScIT"])
             yr = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"])
             if st.button("🚀 Publish Notice", type="primary"):
-                c.execute("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Admin', ?, ?, ?)",
-                          (nc, nt, nb, st.session_state['user'], crs, yr, str(datetime.date.today())))
+                c.execute(
+                    "INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Admin', ?, ?, ?)",
+                    (nc, nt, nb, st.session_state.get('user', ''), crs, yr, str(datetime.date.today()))
+                )
                 conn.commit()
                 st.success("Notice Published!")
                 st.rerun()
             st.markdown("---")
-            show_notices(c_user=st.session_state['user'], u_role="Admin", pfx="adm")
+            show_notices(
+                c_user=st.session_state.get('user', ''),
+                u_role="Admin",
+                pfx="adm"
+            )
 
         with t_d:
             st.subheader("⚠️ Low Attendance Report (<75%)")
@@ -302,7 +424,10 @@ else:
                 if pct < 75.0:
                     d_list.append([s[0], s[1], s[2], t, p, f"{pct:.1f}%"])
             if d_list:
-                st.dataframe(pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attended", "Percentage"]), use_container_width=True)
+                st.dataframe(
+                    pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attended", "Percentage"]),
+                    use_container_width=True
+                )
             else:
                 st.success("🎉 No defaulters found!")
 
@@ -337,8 +462,8 @@ else:
             show_cal(u_role="Admin")
 
     # --- TEACHER DASHBOARD ---
-    elif st.session_state['role'] == "Teacher":
-        st.title(f"👨‍🏫 Teacher Hub ({st.session_state['course']} - {st.session_state['year']})")
+    elif st.session_state.get('role') == "Teacher":
+        st.title(f"👨‍🏫 Teacher Hub ({st.session_state.get('course', '')} - {st.session_state.get('year', '')})")
         tm, tn, tr, tc = st.tabs(["📝 Mark Attendance", "📢 Class Notices", "📊 Analytics", "📅 Calendar"])
         
         with tm:
@@ -346,7 +471,10 @@ else:
             ls = st.text_input("Subject Name", "General")
             lm = ld.strftime("%B %Y")
             
-            c.execute("SELECT username FROM users WHERE role='Student' AND course=? AND year=?", (st.session_state['course'], st.session_state['year']))
+            c.execute(
+                "SELECT username FROM users WHERE role='Student' AND course=? AND year=?",
+                (st.session_state.get('course', ''), st.session_state.get('year', ''))
+            )
             sl = [x[0] for x in c.fetchall()]
             
             if sl:
@@ -355,8 +483,10 @@ else:
                     mks[s] = st.radio(f"👤 {s}", ["Present", "Absent"], key=s, horizontal=True)
                 if st.button("💾 Submit Attendance", type="primary"):
                     for s, stt in mks.items():
-                        c.execute("INSERT INTO attendance VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
-                                  (s, st.session_state['course'], st.session_state['year'], ls, str(ld), lm, stt, st.session_state['user']))
+                        c.execute(
+                            "INSERT INTO attendance VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
+                            (s, st.session_state.get('course', ''), st.session_state.get('year', ''), ls, str(ld), lm, stt, st.session_state.get('user', ''))
+                        )
                     conn.commit()
                     st.success("Attendance Saved!")
             else:
@@ -367,30 +497,47 @@ else:
             nt = st.text_input("Notice Title", key="tnt")
             nb = st.text_area("Notice Body", key="tnb")
             if st.button("🚀 Publish to Class", type="primary"):
-                c.execute("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Teacher', ?, ?, ?)",
-                          (nc, nt, nb, st.session_state['user'], st.session_state['course'], st.session_state['year'], str(datetime.date.today())))
+                c.execute(
+                    "INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Teacher', ?, ?, ?)",
+                    (nc, nt, nb, st.session_state.get('user', ''), st.session_state.get('course', ''), st.session_state.get('year', ''), str(datetime.date.today()))
+                )
                 conn.commit()
                 st.success("Published!")
                 st.rerun()
             st.markdown("---")
-            show_notices(t_crs=st.session_state['course'], t_yr=st.session_state['year'], c_user=st.session_state['user'], u_role="Teacher", pfx="tch")
+            show_notices(
+                t_crs=st.session_state.get('course', 'ALL'),
+                t_yr=st.session_state.get('year', 'ALL'),
+                c_user=st.session_state.get('user', ''),
+                u_role="Teacher",
+                pfx="tch"
+            )
 
         with tr:
-            c.execute("SELECT student_name, subject, date, status FROM attendance WHERE course=? AND year=?", (st.session_state['course'], st.session_state['year']))
+            c.execute(
+                "SELECT student_name, subject, date, status FROM attendance WHERE course=? AND year=?",
+                (st.session_state.get('course', ''), st.session_state.get('year', ''))
+            )
             recs = c.fetchall()
             if recs:
-                st.dataframe(pd.DataFrame(recs, columns=["Student", "Subject", "Date", "Status"]), use_container_width=True)
+                st.dataframe(
+                    pd.DataFrame(recs, columns=["Student", "Subject", "Date", "Status"]),
+                    use_container_width=True
+                )
 
         with tc:
             show_cal(u_role="Teacher")
 
     # --- STUDENT DASHBOARD ---
-    elif st.session_state['role'] == "Student":
+    elif st.session_state.get('role') == "Student":
         st.title("🎓 Student Portal")
         ta, tn, tc, tj = st.tabs(["📊 My Attendance", "📢 Announcements", "📅 Calendar", "😄 Humor Hub"])
         
         with ta:
-            c.execute("SELECT date, subject, status FROM attendance WHERE student_name=?", (st.session_state['user'],))
+            c.execute(
+                "SELECT date, subject, status FROM attendance WHERE student_name=?",
+                (st.session_state.get('user', ''),)
+            )
             recs = c.fetchall()
             if recs:
                 tot = len(recs)
@@ -405,9 +552,28 @@ else:
                 st.progress(min(int(pct), 100))
                 st.info(get_shortfall(pr_count, tot))
                 st.markdown("---")
-                st.dataframe(pd.DataFrame(recs, columns=["Date", "Subject", "Status"]), use_container_width=True)
+                st.dataframe(
+                    pd.DataFrame(recs, columns=["Date", "Subject", "Status"]),
+                    use_container_width=True
+                )
             else:
                 st.info("No attendance records logged for your account yet.")
 
         with tn:
-            show_notices(t_crs=st.session_state['course'], t_yr=st.session_state['year'], c_user=st.session_state['user'
+            show_notices(
+                t_crs=st.session_state.get('course', 'ALL'),
+                t_yr=st.session_state.get('year', 'ALL'),
+                c_user=st.session_state.get('user', ''),
+                u_role="Student",
+                pfx="std"
+            )
+
+        with tc:
+            show_cal(u_role="Student")
+
+        with tj:
+            st.subheader("😄 Daily Tech & Student Humor")
+            st.info(st.session_state['joke'])
+            if st.button("🔄 Next Joke", type="primary"):
+                st.session_state['joke'] = random.choice(JOKES)
+                st.rerun()
