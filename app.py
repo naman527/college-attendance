@@ -31,13 +31,16 @@ def init_db():
 
 init_db()
 
-st.markdown("""
+st.markdown(
+    """
 <style>
 #MainMenu, header, footer {visibility: hidden;}
 .stApp {background: #f8fafc; color: #0f172a; font-family: 'Plus Jakarta Sans', sans-serif;}
 .stButton > button {width: 100%; border-radius: 12px; font-weight: 700; background: #4f46e5; color: white; padding: 12px; border: none;}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 JOKES = [
     "Why do programmers prefer dark mode? Because light attracts bugs! 🐛",
@@ -274,7 +277,10 @@ else:
             yr = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"])
             if st.button("🚀 Publish Notice Broadcast"):
                 with engine.begin() as conn:
-                    conn.execute(text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Admin', :tc, :ty, :d)"), {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": crs, "ty": yr, "d": str(datetime.date.today())})
+                    conn.execute(
+                        text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Admin', :tc, :ty, :d)"),
+                        {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": crs, "ty": yr, "d": str(datetime.date.today())}
+                    )
                 st.success("Notice Published!")
                 st.rerun()
             st.markdown("---")
@@ -346,7 +352,10 @@ else:
                 if st.button("💾 Submit & Save Attendance Logs"):
                     with engine.begin() as conn:
                         for s, stt in mks.items():
-                            conn.execute(text("INSERT INTO attendance VALUES (:s, :c, :y, :sub, :d, :m, :stt, :mb)"), {"s": s, "c": st.session_state.get('course', ''), "y": st.session_state.get('year', ''), "sub": ls, "d": str(ld), "m": lm, "stt": stt, "mb": st.session_state.get('user', '')})
+                            conn.execute(
+                                text("INSERT INTO attendance VALUES (:s, :c, :y, :sub, :d, :m, :stt, :mb)"),
+                                {"s": s, "c": st.session_state.get('course', ''), "y": st.session_state.get('year', ''), "sub": ls, "d": str(ld), "m": lm, "stt": stt, "mb": st.session_state.get('user', '')}
+                            )
                     st.success("Attendance Successfully Saved!")
             else:
                 st.warning("No students registered for your class yet. (Make sure students are registered under Course: " + str(st.session_state.get('course', '')) + " and Year: " + str(st.session_state.get('year', '')) + ")")
@@ -357,4 +366,5 @@ else:
             nb = st.text_area("Notice Body", key="tnb")
             if st.button("🚀 Publish Notice to Class"):
                 with engine.begin() as conn:
-                    conn.execute(text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Teacher', :tc, :ty, :d)"), {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": st.session_sta
+                    conn.execute(
+                        text("INSERT INTO notices (category, title, conte
