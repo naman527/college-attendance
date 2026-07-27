@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 
 # Page Configuration
 st.set_page_config(
-    page_title="Niranjana Majithia College - Campus Portal", 
+    page_title="Niranjana Majithia College - Enterprise Portal", 
     layout="wide", 
     page_icon="🎓"
 )
@@ -36,14 +36,14 @@ def init_db():
 
 init_db()
 
-# Custom Super Attractive Glassmorphism CSS Styling for Niranjana Majithia College Theme
+# Custom SaaS Dark/Light Enterprise UI Styling inspired by Tiimi Dashboard Designs
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-    /* Global App Background with Stunning Mesh Gradient */
+    /* Global App Background */
     .stApp {
-        background: radial-gradient(circle at top left, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+        background-color: #f1f5f9;
         color: #0f172a;
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
@@ -51,104 +51,124 @@ st.markdown("""
     /* Hide default Streamlit elements */
     #MainMenu, header, footer {visibility: hidden;}
 
-    /* Gorgeous Glassmorphism College Header Banner */
-    .college-banner {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
-        padding: 3rem 2rem;
-        border-radius: 24px;
+    /* Enterprise Top App Header Bar */
+    .saas-topbar {
+        background: #0f172a;
         color: white;
-        text-align: center;
-        margin-bottom: 2rem;
-        box-shadow: 0 20px 35px -10px rgba(30, 58, 138, 0.35);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        position: relative;
-        overflow: hidden;
+        padding: 0.75rem 2rem;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
     }
-    .college-banner::before {
-        content: "";
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-        transform: rotate(30deg);
-        pointer-events: none;
+    .saas-topbar h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* SaaS Dashboard Header Banner */
+    .college-banner {
+        background: #ffffff;
+        padding: 1.75rem 2rem;
+        border-radius: 16px;
+        color: #0f172a;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     .college-banner h1 {
         font-weight: 800;
-        font-size: 2.7rem;
-        margin-bottom: 0.5rem;
+        font-size: 1.8rem;
+        margin: 0 0 0.25rem 0;
+        color: #0f172a;
         letter-spacing: -0.5px;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .college-banner p {
-        font-size: 1.2rem;
-        opacity: 0.95;
-        font-weight: 500;
+        font-size: 0.95rem;
+        color: #64748b;
         margin: 0;
-        letter-spacing: 0.3px;
+        font-weight: 500;
     }
 
     /* Modern Card Containers */
     .custom-card, div.stExpander {
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(12px);
-        padding: 1.5rem;
-        border-radius: 18px !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        margin-bottom: 1.5rem;
+        background: #ffffff !important;
+        padding: 1.25rem;
+        border-radius: 14px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+        border: 1px solid #e2e8f0 !important;
+        margin-bottom: 1.25rem;
     }
 
     /* Enhanced Interactive Buttons */
     .stButton > button {
         width: 100%;
-        border-radius: 14px;
-        font-weight: 700;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        border-radius: 10px;
+        font-weight: 600;
+        background: #0f172a;
         color: white;
-        padding: 0.75rem 1rem;
+        padding: 0.6rem 1rem;
         border: none;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        transition: all 0.2s ease-in-out;
     }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-        box-shadow: 0 8px 22px rgba(37, 99, 235, 0.45);
-        transform: translateY(-2px);
+        background: #1e293b;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
     }
 
-    /* Sidebar Glassmorphism Styling */
+    /* Sidebar Clean Styling */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        background: #ffffff;
         border-right: 1px solid #e2e8f0;
     }
 
-    /* Gorgeous Custom Metric Cards */
+    /* SaaS Metric Cards */
     div[data-testid="stMetric"] {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(8px);
-        padding: 1.25rem 1.5rem;
-        border-radius: 16px;
+        background: #ffffff;
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
         border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        transition: transform 0.2s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
     div[data-testid="stMetric"] label {
-        color: #475569 !important;
+        color: #64748b !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #0f172a !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
+        font-size: 1.6rem !important;
     }
 </style>
 
+<div class="saas-topbar">
+    <h2>⚡ Tiimi Workspace <span style="font-size: 0.8rem; background: #2563eb; padding: 2px 8px; border-radius: 6px; font-weight: 500;">Enterprise Edition</span></h2>
+    <div style="font-size: 0.85rem; color: #94a3b8;">Niranjana Majithia College Portal</div>
+</div>
+
 <div class="college-banner">
-    <h1>🏛️ Niranjana Majithia College</h1>
-    <p>Advanced Academic Portal & Student Management System</p>
+    <div>
+        <h1>🏛️ Niranjana Majithia College</h1>
+        <p>Centralized Attendance, Metrics & Academic Operations Hub</p>
+    </div>
+    <div style="text-align: right;">
+        <span style="background: #eff6ff; color: #1d4ed8; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; border: 1px solid #bfdbfe;">🟢 Live System Active</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -163,12 +183,12 @@ def get_shortfall(p, t):
         return "ℹ️ No lectures recorded yet."
     pcent = (p / t) * 100
     if pcent >= 75.0:
-        return "🎉 Excellent! You are above the 75% attendance target."
+        return "🎉 Excellent! You are safely above the 75% requirement."
     needed = (3 * t) - (4 * p)
-    return f"⚠️ Attend the next {max(0, int(needed))} lectures continuously to reach 75%."
+    return f"⚠️ Attention required: Attend the next {max(0, int(needed))} lectures consistently to meet the 75% threshold."
 
 def show_notices(t_crs="ALL", t_yr="ALL", c_user="", u_role="", pfx=""):
-    st.subheader("📢 Class Notices & Updates")
+    st.subheader("📢 Announcements & Notice Board")
     c_flt = st.selectbox("Filter Category", ["ALL", "Notice", "Exam", "Urgent"], key=f"c_{pfx}")
     q = "SELECT id, category, title, content, encode(file_data, 'escape'), file_name, posted_by, role, date FROM notices WHERE 1=1"
     prms = []
@@ -197,15 +217,15 @@ def show_notices(t_crs="ALL", t_yr="ALL", c_user="", u_role="", pfx=""):
                     if st.button("🗑️ Delete Notice", key=f"del_{n[0]}_{pfx}"):
                         with engine.begin() as conn:
                             conn.execute(text("DELETE FROM notices WHERE id=:id"), {"id": n[0]})
-                        st.success("Notice removed!")
+                        st.success("Notice removed successfully!")
                         st.rerun()
     else:
-        st.info("No notices posted right now.")
+        st.info("No active notices found.")
 
 def show_cal(u_role=""):
-    st.subheader("📅 Academic Calendar & Holidays")
+    st.subheader("📅 Academic Schedule & Events")
     if u_role == "Admin":
-        with st.expander("➕ Add New Event"):
+        with st.expander("➕ Schedule New Event"):
             ht = st.text_input("Event Title", key="ht")
             hd = st.date_input("Event Date", datetime.date.today(), key="hd")
             hc = st.selectbox("Category", ["Holiday", "Exam", "Sports", "Cultural"], key="hc")
@@ -229,7 +249,7 @@ def show_cal(u_role=""):
                 st.success("Event Deleted!")
                 st.rerun()
     else:
-        st.info("No upcoming events scheduled.")
+        st.info("No scheduled events in calendar.")
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -240,10 +260,10 @@ if 'joke' not in st.session_state:
     st.session_state['joke'] = random.choice(JOKES)
 
 if not st.session_state['logged_in']:
-    col_l, col_m, col_r = st.columns([1, 2, 1])
+    col_l, col_m, col_r = st.columns([1, 1.5, 1])
     with col_m:
-        st.markdown("<h3 style='text-align: center; color: #1e3a8a;'>🔐 Secure Portal Authentication</h3>", unsafe_allow_html=True)
-        portal = st.selectbox("Select Portal Access", options=["🎓 Student", "👨‍🏫 Teacher", "👑 Admin"])
+        st.markdown("<h3 style='text-align: center; color: #0f172a; margin-bottom: 1.5rem;'>🔐 Portal Authentication</h3>", unsafe_allow_html=True)
+        portal = st.selectbox("Select Access Role", options=["🎓 Student", "👨‍🏫 Teacher", "👑 Admin"])
         st.markdown("---")
 
         if portal == "🎓 Student":
@@ -268,7 +288,7 @@ if not st.session_state['logged_in']:
                     try:
                         with engine.begin() as conn:
                             conn.execute(text("INSERT INTO users VALUES (:u, :p, 'Student', :c, :y, 1)"), {"u": ru, "p": rp, "c": rc, "y": ry})
-                        st.success("Account Created! Sign in now.")
+                        st.success("Account Created! You can sign in now.")
                     except:
                         st.error("User already exists.")
             elif tab_sel == "Reset Password":
@@ -289,7 +309,7 @@ if not st.session_state['logged_in']:
                         res = conn.execute(text("SELECT * FROM users WHERE username=:u AND password=:p AND role='Teacher'"), {"u": u, "p": p}).fetchone()
                     if res:
                         if res[5] == 0:
-                            st.warning("Account pending admin approval.")
+                            st.warning("Account pending administrative approval.")
                         else:
                             st.session_state.update({'logged_in': True, 'user': res[0], 'role': res[2], 'course': res[3], 'year': res[4]})
                             st.rerun()
@@ -304,14 +324,14 @@ if not st.session_state['logged_in']:
                     try:
                         with engine.begin() as conn:
                             conn.execute(text("INSERT INTO users VALUES (:u, :p, 'Teacher', :c, :y, 0)"), {"u": ru, "p": rp, "c": rc, "y": ry})
-                        st.success("Registered! Awaiting admin approval.")
+                        st.success("Registered! Pending admin approval.")
                     except:
                         st.error("User already registered.")
             elif tab_sel == "Reset Password":
                 fu = st.text_input("Registered Email", key="ftu").strip()
                 fp = st.text_input("New Password", type="password", key="ftp").strip()
                 if st.button("Reset Password"):
-                    with engine.begin() as conn:
+                    with engine.connect() as conn:
                         conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Teacher'"), {"p": fp, "u": fu})
                     st.success("Password Updated!")
 
@@ -339,9 +359,9 @@ if not st.session_state['logged_in']:
 else:
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.markdown(f"👤 Logged in as: **{st.session_state.get('user', '')}** | Role: **{st.session_state.get('role', '')}**")
+        st.markdown(f"👤 Authenticated User: **{st.session_state.get('user', '')}** &nbsp;|&nbsp; Role: **{st.session_state.get('role', '')}**")
     with col2:
-        if st.button("🚪 Logout Now"):
+        if st.button("🚪 Logout Session"):
             st.session_state.update({'logged_in': False, 'user': None, 'role': None})
             st.rerun()
             
@@ -350,7 +370,7 @@ else:
     role = st.session_state.get('role')
 
     if role == "Admin":
-        st.title("👑 Master Admin Control Center - Niranjana Majithia College")
+        st.title("👑 Executive Admin Management Dashboard")
         admin_menu = st.radio("Menu", ["📊 Overview", "📢 Post Notice", "⚠️ Defaulters", "👥 User List", "✅ Approvals", "📅 Calendar"], horizontal=True, key="admin_menu_radio")
         st.markdown("---")
         
@@ -362,8 +382,8 @@ else:
             c1.metric("Total Attendance Logs", att)
             c2.metric("Overall Attendance Rate", f"{(prs/att*100) if att>0 else 0:.1f}%")
             
-            dl_course = st.selectbox("Select Course for Download", ["ALL", "BCom", "BMS", "BScIT"], key="dl_crs")
-            dl_year = st.selectbox("Select Year for Download", ["ALL", "FY", "SY", "TY"], key="dl_yr")
+            dl_course = st.selectbox("Filter Course for Export", ["ALL", "BCom", "BMS", "BScIT"], key="dl_crs")
+            dl_year = st.selectbox("Filter Year for Export", ["ALL", "FY", "SY", "TY"], key="dl_yr")
             q_dl = "SELECT student_name, course, year, subject, date, month, status, marked_by FROM attendance WHERE 1=1"
             p_dl = {}
             if dl_course != "ALL":
@@ -377,7 +397,7 @@ else:
             if recs_dl:
                 df_dl = pd.DataFrame(recs_dl, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"])
                 st.dataframe(df_dl, use_container_width=True)
-                st.download_button("📥 Download CSV", data=df_dl.to_csv(index=False).encode('utf-8'), file_name="attendance.csv", mime="text/csv")
+                st.download_button("📥 Export CSV Report", data=df_dl.to_csv(index=False).encode('utf-8'), file_name="attendance_report.csv", mime="text/csv")
             else:
                 st.info("No records found.")
 
@@ -393,23 +413,16 @@ else:
                         text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Admin', :tc, :ty, :d)"),
                         {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": crs, "ty": yr, "d": str(datetime.date.today())}
                     )
-                st.success("Notice Published!")
+                st.success("Notice Published Successfully!")
                 st.rerun()
             st.markdown("---")
             show_notices(c_user=st.session_state.get('user', ''), u_role="Admin", pfx="adm")
 
         elif admin_menu == "⚠️ Defaulters":
-            st.subheader("⚠️ Low Attendance Report (<75%)")
+            st.subheader("⚠️ Low Attendance Tracking (<75%)")
             with engine.connect() as conn:
                 stds = conn.execute(text("SELECT username, course, year FROM users WHERE role='Student'")).fetchall()
             d_list = []
             for s in stds:
                 with engine.connect() as conn:
-                    ar = conn.execute(text("SELECT status FROM attendance WHERE student_name=:u"), {"u": s[0]}).fetchall()
-                t = len(ar)
-                p = sum(1 for x in ar if x[0] == 'Present')
-                pct = (p/t*100) if t > 0 else 0
-                if pct < 75.0:
-                    d_list.append([s[0], s[1], s[2], t, p, f"{pct:.1f}%"])
-            if d_list:
-                st.dataframe(pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attende
+                    ar = c
