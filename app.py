@@ -12,9 +12,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- HARDCODED ADMIN CREDENTIALS ---
-ADMIN_USER = "9321481833"
-ADMIN_PASS = "aniKet@1124"
+# --- SECURE CREDENTIALS (LOADED FROM STREAMLIT SECRETS) ---
+ADMIN_USER = st.secrets.get("ADMIN_USER", "9321481833")
+ADMIN_PASS = st.secrets.get("ADMIN_PASS", "aniKet@1124")
 
 # --- CLEAN HIGH-CONTRAST MOBILE-FIRST CSS ---
 st.markdown("""
@@ -193,7 +193,7 @@ if 'subject' not in a_cols:
 
 conn.commit()
 
-# Ensure Exact Admin Credentials Exist
+# Ensure Secure Admin Credentials Exist in Database
 c.execute("""
 INSERT INTO users (
     username, password, role, course, year, is_approved
@@ -387,7 +387,7 @@ if not st.session_state['logged_in']:
 
     elif portal == "👑 Admin":
         st.markdown("### 👑 Admin Access")
-        st.info("💡 Use Username: `9321481833` and Password: `aniKet@1124`")
+        st.info("💡 Protected by secure environment secrets.")
         t1, t2 = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
         with t1:
             u = st.text_input("Admin Username", key="ad_u").strip()
@@ -401,14 +401,14 @@ if not st.session_state['logged_in']:
                     st.session_state['role'] = res[2]
                     st.rerun()
                 else:
-                    st.error("Invalid Admin Credentials. Please check username & password.")
+                    st.error("Invalid Admin Credentials.")
         with t2:
             ru = st.text_input("Username to Force Reset", key="au").strip()
             rp = st.text_input("New Admin Password", type="password", key="ap").strip()
             if st.button("Update Admin Password"):
                 c.execute("UPDATE users SET password=? WHERE username=? AND role='Admin'", (rp, ru))
                 conn.commit()
-                st.success("Admin Password Updated! You can now sign in.")
+                st.success("Admin Password Updated!")
 
 # --- LOGGED-IN DASHBOARDS WITH PROMINENT LOGOUT BUTTON ---
 else:
@@ -519,3 +519,133 @@ else:
                     d_list.append([s[0], s[1], s[2], t, p, f"{pct:.1f}%"])
             if d_list:
                 df_def = pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attended", "Percentage"])
+                st.dataframe(df_def, use_container_width=True)
+            else:
+                st.success("🎉 No defaulters found!")
+
+        with t_u:
+            st.subheader("👥 System User Management")
+            c.execute("SELECT username, role, course, year, is_approved FROM users")
+            all_u = pd.DataFrame(c.fetchall(), columns=["User", "Role", "Course", "Year", "Approved"])
+            st.dataframe(all_u, use_container_width=True)
+            
+            udel = st.selectbox("Select User Account to Delete", [u for u in all_u['User'] if u != ADMIN_USER])
+            if st.button("🗑️ Delete Selected User Account"):
+                c.execute("DELETE FROM users WHERE username=?", (udel,))
+                conn.commit()
+                st.success("User Deleted!")
+                st.rerun()
+
+        with t_a:
+            st.subheader("✅ Pending Teacher Registrations")
+            c.execute("SELECT username FROM users WHERE role='Teacher' AND is_approved=0")
+            p = c.fetchall()
+            if p:
+                sel = st.selectbox("Select Teacher", [x[0] for x in p])
+                if st.button("Approve Selected Teacher Account"):
+                    c.execute("UPDATE users SET is_approved=1 WHERE username=?", (sel,))
+                    conn.commit()
+                    st.success("Teacher Approved!")
+                    st.rerun()
+            else:
+                st.info("No pending teacher approvals.")
+
+        with t_c:
+            show_cal(u_role="Admin")
+
+    # --- TEACHER DASHBOARD ---
+    elif st.session_state.get('role') == "Teacher":
+        st.title(f"👨‍🏫 Faculty Dashboard ({st.session_state.get('course', '')} - {st.session_state.get('year', '')})")
+        tm, tn, tr, tc = st.tabs(["📝 Mark Attendance", "📢 Class Notices", "📊 Class Analytics", "📅 Calendar"])
+        
+        with tm:
+            ld = st.date_input("Select Lecture Date", datetime.date.today())
+            ls = st.text_input("Subject Name", "General")
+            lm = ld.strftime("%B %Y")
+            
+            c.execute("SELECT username FROM users WHERE role='Student' AND course=? AND year=?", (st.session_state.get('course', ''), st.session_state.get('year', '')))
+            sl = [x[0] for x in c.fetchall()]
+            
+            if sl:
+                st.subheader("📋 Student Attendance List")
+                mks = {}
+                for s in sl:
+                    mks[s] = st.radio(f"👤 {s}", ["Present", "Absent"], key=s, horizontal=True)
+                if st.button("💾 Submit & Save Attendance Logs"):
+                    for s, stt in mks.items():
+                        c.execute("INSERT INTO attendance VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (s, st.session_state.get('course', ''), st.session_state.get('year', ''), ls, str(ld), lm, stt, st.session_state.get('user', '')))
+                    conn.commit()
+                    st.success("Attendance Successfully Saved!")
+            else:
+                st.warning("No students registered for your class yet.")
+
+        with tn:
+            nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="tnc")
+            nt = st.text_input("Notice Title", key="tnt")
+            nb = st.text_area("Notice Body", key="tnb")
+            if st.button("🚀 Publish Notice to Class"):
+                c.execute("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Teacher', ?, ?, ?)", (nc, nt, nb, st.session_state.get('user', ''), st.session_state.get('course', ''), st.session_state.get('year', ''), str(datetime.date.today())))
+                conn.commit()
+                st.success("Published!")
+                st.rerun()
+            st.markdown("---")
+            show_notices(t_crs=st.session_state.get('course', 'ALL'), t_yr=st.session_state.get('year', 'ALL'), c_user=st.session_state.get('user', ''), u_role="Teacher", pfx="tch")
+
+        with tr:
+            c.execute("SELECT student_name, subject, date, status FROM attendance WHERE course=? AND year=?", (st.session_state.get('course', ''), st.session_state.get('year', '')))
+            recs = c.fetchall()
+            if recs:
+                df_class = pd.DataFrame(recs, columns=["Student", "Subject", "Date", "Status"])
+                st.dataframe(df_class, use_container_width=True)
+                st.subheader("📊 Class Attendance Breakdown")
+                status_counts = df_class['Status'].value_counts()
+                st.bar_chart(status_counts)
+            else:
+                st.info("No logs recorded for this class.")
+
+        with tc:
+            show_cal(u_role="Teacher")
+
+    # --- STUDENT DASHBOARD ---
+    elif st.session_state.get('role') == "Student":
+        st.title("🎓 Student Dashboard")
+        ta, tn, tc, tj = st.tabs(["📊 My Attendance", "📢 Class Announcements", "📅 Academic Calendar", "😄 Student Lounge"])
+        
+        with ta:
+            c.execute("SELECT date, subject, status FROM attendance WHERE student_name=?", (st.session_state.get('user', ''),))
+            recs = c.fetchall()
+            if recs:
+                tot = len(recs)
+                pr_count = sum(1 for r in recs if r[2] == 'Present')
+                pct = (pr_count / tot * 100) if tot > 0 else 0.0
+                
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Total Lectures", tot)
+                c2.metric("Lectures Attended", pr_count)
+                c3.metric("Attendance Score", f"{pct:.1f}%")
+                
+                st.progress(min(int(pct), 100))
+                st.info(get_shortfall(pr_count, tot))
+                st.markdown("---")
+                
+                df_std = pd.DataFrame(recs, columns=["Date", "Subject", "Status"])
+                srch = st.text_input("🔍 Quick Filter Logs by Subject/Date", "")
+                if srch:
+                    df_std = df_std[df_std['Subject'].str.contains(srch, case=False) | df_std['Date'].str.contains(srch, case=False)]
+                
+                st.dataframe(df_std, use_container_width=True)
+            else:
+                st.info("No attendance records logged for your account yet.")
+
+        with tn:
+            show_notices(t_crs=st.session_state.get('course', 'ALL'), t_yr=st.session_state.get('year', 'ALL'), c_user=st.session_state.get('user', ''), u_role="Student", pfx="std")
+
+        with tc:
+            show_cal(u_role="Student")
+
+        with tj:
+            st.subheader("😄 Student Tech Humor")
+            st.info(st.session_state['joke'])
+            if st.button("🔄 Get Another Joke"):
+                st.session_state['joke'] = random.choice(JOKES)
+                st.rerun()
