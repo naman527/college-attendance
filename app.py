@@ -267,12 +267,12 @@ else:
                 st.info("No records found.")
 
         elif admin_menu == "📢 Post Notice":
-            nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"])
-            nt = st.text_input("Notice Title")
-            nb = st.text_area("Notice Details")
-            crs = st.selectbox("Target Course", ["ALL", "BCom", "BMS", "BScIT"])
-            yr = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"])
-            if st.button("🚀 Publish Notice Broadcast"):
+            nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="adm_nc")
+            nt = st.text_input("Notice Title", key="adm_nt")
+            nb = st.text_area("Notice Details", key="adm_nb")
+            crs = st.selectbox("Target Course", ["ALL", "BCom", "BMS", "BScIT"], key="adm_crs")
+            yr = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"], key="adm_yr")
+            if st.button("🚀 Publish Notice Broadcast", key="adm_pub_btn"):
                 with engine.begin() as conn:
                     conn.execute(
                         text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Admin', :tc, :ty, :d)"),
@@ -336,8 +336,8 @@ else:
         st.markdown("---")
         
         if teacher_menu == "📝 Mark Attendance":
-            ld = st.date_input("Select Lecture Date", datetime.date.today())
-            ls = st.text_input("Subject Name", "General")
+            ld = st.date_input("Select Lecture Date", datetime.date.today(), key="tch_ld")
+            ls = st.text_input("Subject Name", "General", key="tch_ls")
             lm = ld.strftime("%B %Y")
             with engine.connect() as conn:
                 sl = [x[0] for x in conn.execute(text("SELECT username FROM users WHERE role='Student' AND course=:c AND year=:y"), {"c": st.session_state.get('course', ''), "y": st.session_state.get('year', '')}).fetchall()]
@@ -345,8 +345,8 @@ else:
                 st.subheader("📋 Student Attendance List")
                 mks = {}
                 for s in sl:
-                    mks[s] = st.radio(f"👤 {s}", ["Present", "Absent"], key=s, horizontal=True)
-                if st.button("💾 Submit & Save Attendance Logs"):
+                    mks[s] = st.radio(f"👤 {s}", ["Present", "Absent"], key=f"att_rad_{s}", horizontal=True)
+                if st.button("💾 Submit & Save Attendance Logs", key="tch_save_att"):
                     with engine.begin() as conn:
                         for s, stt in mks.items():
                             conn.execute(
@@ -361,7 +361,4 @@ else:
             nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="tnc")
             nt = st.text_input("Notice Title", key="tnt")
             nb = st.text_area("Notice Body", key="tnb")
-            if st.button("🚀 Publish Notice to Class"):
-                with engine.begin() as conn:
-                    conn.execute(
-                        text("INSERT INTO notices (category, title, content, posted_
+            if st.button("🚀 Publish Notice to Class", key="tch_pub_
