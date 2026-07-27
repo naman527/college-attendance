@@ -13,17 +13,36 @@ c.execute('''CREATE TABLE IF NOT EXISTS users
              (username TEXT PRIMARY KEY, password TEXT, role TEXT, course TEXT, year TEXT, is_approved INTEGER)''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS attendance
-             (student_name TEXT, course TEXT, year TEXT, date TEXT, status TEXT, marked_by TEXT)''')
+             (student_name TEXT, course TEXT, year TEXT, subject TEXT, date TEXT, month TEXT, status TEXT, marked_by TEXT)''')
 
-# Auto-migrate database: Check if 'month' column exists in attendance table, add if missing
+# Extended Notices table with file attachments
+c.execute('''CREATE TABLE IF NOT EXISTS notices
+             (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, title TEXT, content TEXT, file_data BLOB, file_name TEXT, posted_by TEXT, role TEXT, target_course TEXT, target_year TEXT, date TEXT)''')
+
+# Holiday Calendar table
+c.execute('''CREATE TABLE IF NOT EXISTS holidays
+             (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, date TEXT, category TEXT)''')
+
+# Schema Migrations
+c.execute("PRAGMA table_info(notices)")
+n_cols = [col[1] for col in c.fetchall()]
+if 'file_data' not in n_cols:
+    c.execute("ALTER TABLE notices ADD COLUMN file_data BLOB")
+if 'file_name' not in n_cols:
+    c.execute("ALTER TABLE notices ADD COLUMN file_name TEXT")
+if 'category' not in n_cols:
+    c.execute("ALTER TABLE notices ADD COLUMN category TEXT DEFAULT '📢 Notice'")
+
 c.execute("PRAGMA table_info(attendance)")
-columns = [column[1] for column in c.fetchall()]
-if 'month' not in columns:
+a_cols = [col[1] for col in c.fetchall()]
+if 'month' not in a_cols:
     c.execute("ALTER TABLE attendance ADD COLUMN month TEXT")
+if 'subject' not in a_cols:
+    c.execute("ALTER TABLE attendance ADD COLUMN subject TEXT DEFAULT 'General'")
 
 conn.commit()
 
-# Ensure Admin Credentials exist
+# Ensure Default Admin Exists
 c.execute("""
     INSERT INTO users (username, password, role, course, year, is_approved)
     VALUES ('naman@1125', 'aniKet@124', 'Admin', 'ALL', 'ALL', 1)
@@ -31,7 +50,7 @@ c.execute("""
 """)
 conn.commit()
 
-# Helper function to calculate 75% attendance requirement
+# Helper: Calculate 75% attendance shortfall
 def calculate_75_shortfall(presents, total):
     if total == 0:
         return 0, "No lectures recorded yet."
@@ -43,10 +62,101 @@ def calculate_75_shortfall(presents, total):
     needed = (3 * total) - (4 * presents)
     return max(0, needed), f"⚠️ You need to attend the next **{needed}** consecutive lecture(s) to reach 75%."
 
+# Helper: Render Notices & Timetables Board with Delete and Download
+def render_notice_board(target_course="ALL", target_year="ALL", current_user="", user_role="", key_suffix=""):
+    st.subheader("📌 Notices, Timetables & Announcements")
+    
+    cat_filter = st.selectbox("Filter by Category", ["ALL", "📢 Notice", "📅 Timetable", "📝 Exam Schedule", "⚠️ Urgent"], key=f"cat_fltr_{key_suffix}")
+    
+    query = "SELECT id, category, title, content, file_data, file_name, posted_by, role, date, target_course, target_year FROM notices WHERE 1=1"
+    params = []
+    
+    if cat_filter != "ALL":
+        query += " AND category=?"
+        params.append(cat_filter)
+        
+    if target_course != "ALL":
+        query += " AND (target_course=? OR target_course='ALL')"
+        params.append(target_course)
+    if target_year != "ALL":
+        query += " AND (target_year=? OR target_year='ALL')"
+        params.append(target_year)
+        
+    query += " ORDER BY id DESC"
+    
+    c.execute(query, params)
+    notices = c.fetchall()
+    
+    if notices:
+        for n_id, category, title, content, file_data, file_name, posted_by, role, date_posted, tc, ty in notices:
+            with st.expander(f"{category} | {title} ({date_posted})", expanded=True):
+                st.write(content)
+                
+                # Render file download button if an attachment exists
+                if file_data and file_name:
+                    st.download_button(
+                        label=f"📎 Download Attachment ({file_name})",
+                        data=file_data,
+                        file_name=file_name,
+                        key=f"dl_{n_id}_{key_suffix}"
+                    )
+                    
+                col_cap, col_del = st.columns([3, 1])
+                with col_cap:
+                    st.caption(f"Posted by: **{posted_by}** ({role}) | Target: Course `{tc}`, Year `{ty}`")
+                
+                # Delete permission for Admins or the teacher who posted it
+                with col_del:
+                    if user_role == "Admin" or (user_role == "Teacher" and posted_by == current_user):
+                        if st.button("🗑️ Delete", key=f"del_n_{n_id}_{key_suffix}"):
+                            c.execute("DELETE FROM notices WHERE id=?", (n_id,))
+                            conn.commit()
+                            st.success("Deleted successfully!")
+                            st.rerun()
+    else:
+        st.info("No notices or timetables posted for this view.")
+
+# Helper: Render Academic & Holiday Calendar
+def render_holiday_calendar(user_role=""):
+    st.subheader("📅 College Holiday & Academic Calendar")
+    
+    if user_role == "Admin":
+        with st.expander("➕ Add New Holiday / Event"):
+            h_title = st.text_input("Event / Holiday Name", key="h_title")
+            h_date = st.date_input("Date", datetime.date.today(), key="h_date")
+            h_cat = st.selectbox("Type", ["Official Holiday", "Exam Event", "Cultural / Sports", "Vacation"], key="h_cat")
+            
+            if st.button("Add to Calendar"):
+                if h_title:
+                    c.execute("INSERT INTO holidays (title, date, category) VALUES (?, ?, ?)",
+                              (h_title, str(h_date), h_cat))
+                    conn.commit()
+                    st.success("Added to calendar!")
+                    st.rerun()
+                else:
+                    st.warning("Please enter a title.")
+
+    c.execute("SELECT id, title, date, category FROM holidays ORDER BY date ASC")
+    holidays = c.fetchall()
+    
+    if holidays:
+        df_h = pd.DataFrame(holidays, columns=["ID", "Event / Holiday", "Date", "Category"])
+        st.dataframe(df_h[["Event / Holiday", "Date", "Category"]], use_container_width=True)
+        
+        if user_role == "Admin":
+            h_del_id = st.selectbox("Select Event ID to Delete", [h[0] for h in holidays], format_func=lambda x: f"ID {x}")
+            if st.button("Delete Event"):
+                c.execute("DELETE FROM holidays WHERE id=?", (h_del_id,))
+                conn.commit()
+                st.success("Event removed.")
+                st.rerun()
+    else:
+        st.info("No holidays or events added to the calendar yet.")
+
 # -------------------------------------------------------------
 # APP CONFIGURATION
 # -------------------------------------------------------------
-st.set_page_config(page_title="College Attendance Portal", layout="wide")
+st.set_page_config(page_title="College Attendance Portal", layout="wide", page_icon="🎓")
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -69,7 +179,7 @@ if not st.session_state['logged_in']:
         admin_user = st.text_input("Admin Username").strip()
         admin_pass = st.text_input("Admin Password", type="password").strip()
         
-        if st.button("Sign In as Admin"):
+        if st.button("Sign In as Admin", type="primary"):
             c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (admin_user, admin_pass))
             user = c.fetchone()
             if user:
@@ -90,7 +200,7 @@ if not st.session_state['logged_in']:
             t_user = st.text_input("Teacher Username / Email", key="t_login_user").strip()
             t_pass = st.text_input("Password", type="password", key="t_login_pass").strip()
             
-            if st.button("Teacher Login"):
+            if st.button("Teacher Login", type="primary"):
                 c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Teacher'", (t_user, t_pass))
                 user = c.fetchone()
                 if user:
@@ -134,7 +244,7 @@ if not st.session_state['logged_in']:
             s_user = st.text_input("Student Username / Email", key="s_login_user").strip()
             s_pass = st.text_input("Password", type="password", key="s_login_pass").strip()
             
-            if st.button("Student Login"):
+            if st.button("Student Login", type="primary"):
                 c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Student'", (s_user, s_pass))
                 user = c.fetchone()
                 if user:
@@ -170,9 +280,21 @@ if not st.session_state['logged_in']:
 # LOGGED-IN DASHBOARDS
 # -------------------------------------------------------------
 else:
-    st.sidebar.markdown(f"**Logged in as:** `{st.session_state['user']}`")
-    st.sidebar.markdown(f"**Role:** `{st.session_state['role']}`")
-    if st.sidebar.button("Logout"):
+    st.sidebar.markdown(f"👤 **User:** `{st.session_state['user']}`")
+    st.sidebar.markdown(f"🏷️ **Role:** `{st.session_state['role']}`")
+    
+    st.sidebar.markdown("---")
+    with st.sidebar.expander("🔑 Change Password"):
+        new_pw = st.text_input("New Password", type="password", key="chg_pw")
+        if st.button("Update Password"):
+            if new_pw:
+                c.execute("UPDATE users SET password=? WHERE username=?", (new_pw, st.session_state['user']))
+                conn.commit()
+                st.success("Password updated!")
+            else:
+                st.warning("Enter a valid password.")
+                
+    if st.sidebar.button("Logout", type="secondary"):
         st.session_state['logged_in'] = False
         st.rerun()
 
@@ -180,7 +302,14 @@ else:
     if st.session_state['role'] == "Admin":
         st.title("👑 Master Admin Command Center")
         
-        tab_stats, tab_users, tab_approvals = st.tabs(["📊 Global Statistics & Records", "👥 User Management", "🔔 Teacher Approvals"])
+        tab_stats, tab_notice, tab_defaulters, tab_users, tab_approvals, tab_calendar = st.tabs([
+            "📊 Global Stats & Reports", 
+            "📢 Notices & Timetables",
+            "⚠️ Defaulter List (<75%)", 
+            "👥 User Management", 
+            "🔔 Teacher Approvals",
+            "📅 Academic Calendar"
+        ])
 
         # Tab 1: Global Stats & Reports
         with tab_stats:
@@ -203,12 +332,12 @@ else:
             col4.metric("Avg Overall Attendance", f"{overall_pct:.1f}%")
 
             st.markdown("---")
-            st.subheader("Filter Attendance by Course & Year")
+            st.subheader("Filter Attendance Records")
             
             filter_course = st.selectbox("Select Course", ["ALL", "BCom", "BMS", "BScIT"])
             filter_year = st.selectbox("Select Year", ["ALL", "FY", "SY", "TY"])
             
-            query = "SELECT student_name, course, year, date, month, status, marked_by FROM attendance WHERE 1=1"
+            query = "SELECT student_name, course, year, subject, date, month, status, marked_by FROM attendance WHERE 1=1"
             params = []
             
             if filter_course != "ALL":
@@ -222,8 +351,16 @@ else:
             records = c.fetchall()
             
             if records:
-                df_all = pd.DataFrame(records, columns=["Student", "Course", "Year", "Date", "Month", "Status", "Teacher"])
+                df_all = pd.DataFrame(records, columns=["Student", "Course", "Year", "Subject", "Date", "Month", "Status", "Teacher"])
                 st.dataframe(df_all, use_container_width=True)
+                
+                csv_data = df_all.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Download Attendance Report as CSV",
+                    data=csv_data,
+                    file_name=f"Attendance_Report_{filter_course}_{filter_year}.csv",
+                    mime="text/csv"
+                )
                 
                 st.subheader("Monthly Report Breakdown")
                 monthly_summary = df_all.groupby(["Month", "Status"]).size().unstack(fill_value=0)
@@ -231,128 +368,60 @@ else:
             else:
                 st.info("No attendance records match the selected filter.")
 
-        # Tab 2: Manage Users
-        with tab_users:
-            st.subheader("Registered System Users")
-            c.execute("SELECT username, role, course, year, is_approved FROM users")
-            all_users = pd.DataFrame(c.fetchall(), columns=["Username", "Role", "Course", "Year", "Approved"])
-            st.dataframe(all_users, use_container_width=True)
+        # Tab 2: Admin Notice & Timetable Management
+        with tab_notice:
+            st.subheader("Post Notice, Timetable, or Announcement")
             
-            st.markdown("---")
-            st.subheader("Delete User Account")
-            user_to_delete = st.selectbox("Select User to Remove", [u for u in all_users['Username'] if u != "naman@1125"])
-            if st.button("Delete Selected User"):
-                c.execute("DELETE FROM users WHERE username=?", (user_to_delete,))
-                c.execute("DELETE FROM attendance WHERE student_name=?", (user_to_delete,))
-                conn.commit()
-                st.success(f"User `{user_to_delete}` and their records have been removed.")
-                st.rerun()
-
-        # Tab 3: Teacher Approvals
-        with tab_approvals:
-            st.subheader("Pending Teacher Registrations")
-            c.execute("SELECT username, course, year FROM users WHERE role='Teacher' AND is_approved=0")
-            pending = c.fetchall()
-            
-            if pending:
-                df_pending = pd.DataFrame(pending, columns=["Teacher Email", "Course", "Year"])
-                st.dataframe(df_pending)
+            col_cat, col_t = st.columns([1, 2])
+            with col_cat:
+                n_category = st.selectbox("Category Type", ["📢 Notice", "📅 Timetable", "📝 Exam Schedule", "⚠️ Urgent"], key="adm_n_cat")
+            with col_t:
+                n_title = st.text_input("Title / Heading", key="adm_n_title")
                 
-                t_approve = st.selectbox("Select Teacher to Approve", [t[0] for t in pending])
-                if st.button("Approve Selected Teacher"):
-                    c.execute("UPDATE users SET is_approved=1 WHERE username=?", (t_approve,))
+            n_content = st.text_area("Content / Details / Schedule", key="adm_n_content")
+            uploaded_file = st.file_uploader("Attach PDF or Image (Optional)", type=["pdf", "png", "jpg", "jpeg"], key="adm_n_file")
+            
+            col_c, col_y = st.columns(2)
+            with col_c:
+                n_course = st.selectbox("Target Course", ["ALL", "BCom", "BMS", "BScIT"], key="adm_n_crs")
+            with col_y:
+                n_year = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"], key="adm_n_yr")
+                
+            if st.button("Publish Entry", type="primary"):
+                if n_title and n_content:
+                    today_str = str(datetime.date.today())
+                    file_bytes = uploaded_file.read() if uploaded_file else None
+                    file_name = uploaded_file.name if uploaded_file else None
+                    
+                    c.execute("""INSERT INTO notices 
+                                 (category, title, content, file_data, file_name, posted_by, role, target_course, target_year, date) 
+                                 VALUES (?, ?, ?, ?, ?, ?, 'Admin', ?, ?, ?)""",
+                              (n_category, n_title, n_content, file_bytes, file_name, st.session_state['user'], n_course, n_year, today_str))
                     conn.commit()
-                    st.success(f"Approved teacher `{t_approve}`!")
+                    st.success("Entry published successfully!")
                     st.rerun()
-            else:
-                st.info("No pending teacher approval requests.")
-
-    # --- TEACHER DASHBOARD ---
-    elif st.session_state['role'] == "Teacher":
-        st.title(f"👨‍🏫 Attendance Entry ({st.session_state['course']} - {st.session_state['year']})")
-        
-        tab_mark, tab_reports = st.tabs(["Mark Daily Attendance", "Course Monthly Reports"])
-        
-        with tab_mark:
-            selected_date = st.date_input("Select Date", datetime.date.today())
-            month_str = selected_date.strftime("%B %Y")
-            
-            c.execute("SELECT username FROM users WHERE role='Student' AND course=? AND year=?", 
-                      (st.session_state['course'], st.session_state['year']))
-            students = [s[0] for s in c.fetchall()]
-            
-            if students:
-                st.subheader(f"Marking Attendance for {month_str}")
-                attendance_data = {}
-                for student in students:
-                    attendance_data[student] = st.radio(f"Student: **{student}**", ["Present", "Absent"], key=student, horizontal=True)
-                
-                if st.button("Submit Attendance"):
-                    for student, status in attendance_data.items():
-                        c.execute("INSERT INTO attendance (student_name, course, year, date, month, status, marked_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                  (student, st.session_state['course'], st.session_state['year'], str(selected_date), month_str, status, st.session_state['user']))
-                    conn.commit()
-                    st.success("Attendance successfully submitted!")
-            else:
-                st.warning("No students registered for your course and year yet.")
-
-        with tab_reports:
-            st.subheader("Class Monthly Attendance Report")
-            c.execute("SELECT student_name, date, month, status FROM attendance WHERE course=? AND year=?", 
-                      (st.session_state['course'], st.session_state['year']))
-            records = c.fetchall()
-            
-            if records:
-                df_cls = pd.DataFrame(records, columns=["Student", "Date", "Month", "Status"])
-                st.dataframe(df_cls, use_container_width=True)
-                
-                st.subheader("Monthly Class Breakdown")
-                pivot_chart = df_cls.groupby(["Month", "Status"]).size().unstack(fill_value=0)
-                st.bar_chart(pivot_chart)
-            else:
-                st.info("No records recorded for your class yet.")
-
-    # --- STUDENT DASHBOARD ---
-    elif st.session_state['role'] == "Student":
-        st.title(f"🎓 Student Attendance & 75% Target Tracker")
-        
-        c.execute("SELECT date, month, status, marked_by FROM attendance WHERE student_name=?", (st.session_state['user'],))
-        records = c.fetchall()
-        
-        if records:
-            df_st = pd.DataFrame(records, columns=["Date", "Month", "Status", "Marked By Teacher"])
-            
-            total = len(df_st)
-            presents = len(df_st[df_st['Status'] == "Present"])
-            absents = total - presents
-            current_pct = (presents / total) * 100 if total > 0 else 0.0
-            
-            needed_lectures, status_msg = calculate_75_shortfall(presents, total)
-            
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Total Lectures", total)
-            col2.metric("Presents Logged", presents)
-            col3.metric("Absents Logged", absents)
-            col4.metric("Current Percentage", f"{current_pct:.1f}%")
-            
+                else:
+                    st.warning("Title and content are required.")
+                    
             st.markdown("---")
+            render_notice_board(current_user=st.session_state['user'], user_role=st.session_state['role'], key_suffix="adm")
+
+        # Tab 3: Defaulter List (<75%)
+        with tab_defaulters:
+            st.subheader("⚠️ Students Below 75% Attendance")
+            c.execute("SELECT username, course, year FROM users WHERE role='Student'")
+            all_st = c.fetchall()
             
-            if current_pct < 75.0:
-                st.error(f"### ⚠️ Below Attendance Criteria\n{status_msg}")
-            else:
-                st.success(f"### 🎯 Criteria Satisfied\n{status_msg}")
+            defaulter_data = []
+            for s_user, s_crs, s_yr in all_st:
+                c.execute("SELECT status FROM attendance WHERE student_name=?", (s_user,))
+                s_recs = c.fetchall()
+                t_count = len(s_recs)
+                p_count = sum(1 for r in s_recs if r[0] == 'Present')
+                pct = (p_count / t_count * 100) if t_count > 0 else 0.0
                 
-            st.markdown("---")
-            
-            tab_rec, tab_m_report = st.tabs(["Detailed Log", "Monthly Summary Breakdown"])
-            
-            with tab_rec:
-                st.subheader("Date-wise Record")
-                st.dataframe(df_st, use_container_width=True)
-                
-            with tab_m_report:
-                st.subheader("Monthly Attendance Breakdown")
-                monthly_st = df_st.groupby(["Month", "Status"]).size().unstack(fill_value=0)
-                st.bar_chart(monthly_st)
-        else:
-            st.info("No attendance entries recorded for your account yet.")
+                if pct < 75.0:
+                    defaulter_data.append([s_user, s_crs, s_yr, t_count, p_count, f"{pct:.1f}%"])
+                    
+            if defaulter_data:
+                df_def =
