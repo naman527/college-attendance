@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="Campus Portal",
     layout="wide",
     page_icon="🎓",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # --- SECURE CREDENTIALS ---
@@ -96,6 +96,11 @@ button[data-baseweb="tab"][aria-selected="true"] {
     background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
     color: #ffffff !important;
     box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.25) !important;
+}
+
+/* Logout Button Special Color */
+button[kind="secondary"] {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
 }
 
 /* Form Container Card */
@@ -193,14 +198,14 @@ if 'subject' not in a_cols:
 
 conn.commit()
 
-# Dynamic Admin User
+# Ensure Admin Account is Always Correctly Upserted
 c.execute("""
 INSERT INTO users (
     username, password, role, course, year, is_approved
 ) VALUES (
     ?, ?, 'Admin', 'ALL', 'ALL', 1
 ) ON CONFLICT(username) DO UPDATE SET 
-    password=?, is_approved=1
+    password=?, role='Admin', is_approved=1
 """, (ADMIN_USER, ADMIN_PASS, ADMIN_PASS))
 conn.commit()
 
@@ -294,11 +299,10 @@ if 'logged_in' not in st.session_state:
 if 'joke' not in st.session_state:
     st.session_state['joke'] = random.choice(JOKES)
 
-# --- LOGIN SCREEN WITH VISIBLE TOP SWITCHER ---
+# --- LOGIN SCREEN ---
 if not st.session_state['logged_in']:
     st.markdown("## 🎓 Campus Portal")
     
-    # SAFE HORIZONTAL RADIO SWITCHER FOR COMPATIBILITY
     portal = st.radio(
         "Select Portal",
         options=["🎓 Student", "👨‍🏫 Teacher", "👑 Admin"],
@@ -388,10 +392,11 @@ if not st.session_state['logged_in']:
 
     elif portal == "👑 Admin":
         st.markdown("### 👑 Admin Access")
+        st.info(f"💡 Default Admin Username configured in secrets: `{ADMIN_USER}`")
         t1, t2 = st.tabs(["🔐 Sign In", "🔑 Reset Password"])
         with t1:
-            u = st.text_input("Admin Username").strip()
-            p = st.text_input("Password", type="password").strip()
+            u = st.text_input("Admin Username", key="ad_u").strip()
+            p = st.text_input("Password", type="password", key="ad_p").strip()
             if st.button("Sign In to Control Center"):
                 c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (u, p))
                 res = c.fetchone()
@@ -401,30 +406,46 @@ if not st.session_state['logged_in']:
                     st.session_state['role'] = res[2]
                     st.rerun()
                 else:
-                    st.error("Invalid Admin Credentials")
+                    st.error("Invalid Admin Credentials. Make sure you are using your Streamlit Secrets username & password.")
         with t2:
-            ru = st.text_input("Username", key="au").strip()
-            rp = st.text_input("New Password", type="password", key="ap").strip()
+            ru = st.text_input("Username to Force Reset", key="au").strip()
+            rp = st.text_input("New Admin Password", type="password", key="ap").strip()
             if st.button("Update Admin Password"):
                 c.execute("UPDATE users SET password=? WHERE username=? AND role='Admin'", (rp, ru))
                 conn.commit()
-                st.success("Password Updated!")
+                st.success("Admin Password Updated! You can now sign in.")
 
-# --- LOGGED-IN DASHBOARDS ---
+# --- LOGGED-IN DASHBOARDS WITH PROMINENT LOGOUT BUTTON ---
 else:
+    # PROMINENT TOP LOGOUT & USER INFO BAR IN MAIN CONTAINER (Guaranteed Visibility)
+    col_info, col_logout = st.columns([3, 1])
+    with col_info:
+        st.markdown(f"👤 Logged in as: **{st.session_state.get('user', '')}** | Role: **{st.session_state.get('role', '')}**")
+    with col_logout:
+        if st.button("🚪 Logout Now", key="top_logout_btn"):
+            st.session_state['logged_in'] = False
+            st.session_state['user'] = None
+            st.session_state['role'] = None
+            st.rerun()
+            
+    st.markdown("---")
+
+    # Sidebar Logout / Settings as well
     st.sidebar.markdown(f"👤 **User:** `{st.session_state.get('user', '')}`")
     st.sidebar.markdown(f"🏷️ **Role:** `{st.session_state.get('role', '')}`")
     st.sidebar.markdown("---")
     
     with st.sidebar.expander("⚙️ Account Settings"):
-        npw = st.text_input("Change Password", type="password")
-        if st.button("Update Password"):
+        npw = st.text_input("Change Password", type="password", key="sb_npw")
+        if st.button("Update Password", key="sb_upd"):
             c.execute("UPDATE users SET password=? WHERE username=?", (npw, st.session_state.get('user', '')))
             conn.commit()
-            st.success("Updated!")
+            st.success("Password Updated!")
 
-    if st.sidebar.button("🚪 Logout"):
+    if st.sidebar.button("🚪 Logout from Sidebar", key="side_logout_btn"):
         st.session_state['logged_in'] = False
+        st.session_state['user'] = None
+        st.session_state['role'] = None
         st.rerun()
 
     # --- ADMIN DASHBOARD ---
@@ -497,30 +518,4 @@ else:
             st.subheader("👥 System User Management")
             c.execute("SELECT username, role, course, year, is_approved FROM users")
             all_u = pd.DataFrame(c.fetchall(), columns=["User", "Role", "Course", "Year", "Approved"])
-            st.dataframe(all_u, use_container_width=True)
-            
-            udel = st.selectbox("Select User Account to Delete", [u for u in all_u['User'] if u != ADMIN_USER])
-            if st.button("🗑️ Delete Selected User Account"):
-                c.execute("DELETE FROM users WHERE username=?", (udel,))
-                conn.commit()
-                st.success("User Deleted!")
-                st.rerun()
-
-        with t_a:
-            st.subheader("✅ Pending Teacher Registrations")
-            c.execute("SELECT username FROM users WHERE role='Teacher' AND is_approved=0")
-            p = c.fetchall()
-            if p:
-                sel = st.selectbox("Select Teacher", [x[0] for x in p])
-                if st.button("Approve Selected Teacher Account"):
-                    c.execute("UPDATE users SET is_approved=1 WHERE username=?", (sel,))
-                    conn.commit()
-                    st.success("Teacher Approved!")
-                    st.rerun()
-            else:
-                st.info("No pending teacher approvals.")
-
-        with t_c:
-            show_cal(u_role="Admin")
-
-    # ---
+            s
