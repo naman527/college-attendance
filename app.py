@@ -166,24 +166,44 @@ if not st.session_state['logged_in']:
         st.header("🔑 Admin Sign-In")
         st.caption("Restricted administrative control panel.")
         
-        admin_user = st.text_input("Admin Username").strip()
-        admin_pass = st.text_input("Admin Password", type="password").strip()
+        tab1, tab2 = st.tabs(["Admin Login", "🔑 Forgot Password"])
         
-        if st.button("Sign In as Admin", type="primary"):
-            c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (admin_user, admin_pass))
-            user = c.fetchone()
-            if user:
-                st.session_state['logged_in'] = True
-                st.session_state['user'] = user[0]
-                st.session_state['role'] = user[2]
-                st.success("Welcome back, Admin!")
-                st.rerun()
-            else:
-                st.error("Invalid Admin credentials.")
+        with tab1:
+            admin_user = st.text_input("Admin Username").strip()
+            admin_pass = st.text_input("Admin Password", type="password").strip()
+            
+            if st.button("Sign In as Admin", type="primary"):
+                c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (admin_user, admin_pass))
+                user = c.fetchone()
+                if user:
+                    st.session_state['logged_in'] = True
+                    st.session_state['user'] = user[0]
+                    st.session_state['role'] = user[2]
+                    st.success("Welcome back, Admin!")
+                    st.rerun()
+                else:
+                    st.error("Invalid Admin credentials.")
+                    
+        with tab2:
+            st.subheader("Reset Admin Password")
+            reset_admin_user = st.text_input("Enter Admin Username", key="fp_admin_user").strip()
+            new_admin_pass = st.text_input("Enter New Password", type="password", key="fp_admin_pass").strip()
+            
+            if st.button("Reset Admin Password"):
+                if reset_admin_user and new_admin_pass:
+                    c.execute("SELECT * FROM users WHERE username=? AND role='Admin'", (reset_admin_user,))
+                    if c.fetchone():
+                        c.execute("UPDATE users SET password=? WHERE username=? AND role='Admin'", (new_admin_pass, reset_admin_user))
+                        conn.commit()
+                        st.success("Admin password reset successfully! You can now log in.")
+                    else:
+                        st.error("Admin user not found.")
+                else:
+                    st.warning("Please fill in all fields.")
 
     elif portal_choice == "👨‍🏫 Teacher Portal":
         st.header("👨‍🏫 Teacher Portal")
-        tab1, tab2 = st.tabs(["Teacher Login", "Teacher Register"])
+        tab1, tab2, tab3 = st.tabs(["Teacher Login", "Teacher Register", "🔑 Forgot Password"])
         
         with tab1:
             t_user = st.text_input("Teacher Username / Email", key="t_login_user").strip()
@@ -207,26 +227,44 @@ if not st.session_state['logged_in']:
                     st.error("Invalid Teacher credentials.")
                     
         with tab2:
-            reg_user = st.text_input("New Teacher Username / Email", key="t_reg_user").strip()
-            reg_pass = st.text_input("New Password", type="password", key="t_reg_pass").strip()
-            course = st.selectbox("Assigned Course", ["BCom", "BMS", "BScIT"], key="t_reg_course")
-            year = st.selectbox("Assigned Year", ["FY", "SY", "TY"], key="t_reg_year")
+            reg_t_user = st.text_input("New Teacher Username / Email", key="t_reg_user_new").strip()
+            reg_t_pass = st.text_input("New Password", type="password", key="t_reg_pass_new").strip()
+            t_course = st.selectbox("Assigned Course", ["BCom", "BMS", "BScIT"], key="t_reg_course_new")
+            t_year = st.selectbox("Assigned Year", ["FY", "SY", "TY"], key="t_reg_year_new")
             
             if st.button("Register Teacher Account"):
-                if reg_user and reg_pass:
+                if reg_t_user and reg_t_pass:
                     try:
-                        c.execute("INSERT INTO users VALUES (?, ?, 'Teacher', ?, ?, 0)", 
-                                  (reg_user, reg_pass, course, year))
+                        c.execute("INSERT INTO users (username, password, role, course, year, is_approved) VALUES (?, ?, 'Teacher', ?, ?, 0)", 
+                                  (reg_t_user, reg_t_pass, t_course, t_year))
                         conn.commit()
-                        st.info("Registration submitted! Admin approval required before logging in.")
+                        st.success("Registration submitted! Admin approval required before logging in.")
                     except sqlite3.IntegrityError:
                         st.error("Username already registered!")
                 else:
                     st.warning("Please fill out all fields.")
+                    
+        with tab3:
+            st.subheader("Reset Teacher Password")
+            fp_t_user = st.text_input("Teacher Username / Email", key="fp_t_user").strip()
+            fp_t_course = st.selectbox("Registered Course", ["BCom", "BMS", "BScIT"], key="fp_t_crs")
+            fp_t_new_pass = st.text_input("Enter New Password", type="password", key="fp_t_pass").strip()
+            
+            if st.button("Reset Teacher Password"):
+                if fp_t_user and fp_t_new_pass:
+                    c.execute("SELECT * FROM users WHERE username=? AND course=? AND role='Teacher'", (fp_t_user, fp_t_course))
+                    if c.fetchone():
+                        c.execute("UPDATE users SET password=? WHERE username=? AND role='Teacher'", (fp_t_new_pass, fp_t_user))
+                        conn.commit()
+                        st.success("Password reset successfully! You can now log in.")
+                    else:
+                        st.error("Matching teacher account not found.")
+                else:
+                    st.warning("Please fill in all fields.")
 
     elif portal_choice == "🎓 Student Portal":
         st.header("🎓 Student Portal")
-        tab1, tab2 = st.tabs(["Student Login", "Student Register"])
+        tab1, tab2, tab3 = st.tabs(["Student Login", "Student Register", "🔑 Forgot Password"])
         
         with tab1:
             s_user = st.text_input("Student Username / Email", key="s_login_user").strip()
@@ -247,22 +285,40 @@ if not st.session_state['logged_in']:
                     st.error("Invalid Student credentials.")
                     
         with tab2:
-            reg_user = st.text_input("New Student Username / Email", key="s_reg_user").strip()
-            reg_pass = st.text_input("New Password", type="password", key="s_reg_pass").strip()
-            course = st.selectbox("Course Enrolled", ["BCom", "BMS", "BScIT"], key="s_reg_course")
-            year = st.selectbox("Year", ["FY", "SY", "TY"], key="s_reg_year")
+            reg_s_user = st.text_input("New Student Username / Email", key="s_reg_user_new").strip()
+            reg_s_pass = st.text_input("New Password", type="password", key="s_reg_pass_new").strip()
+            s_course = st.selectbox("Course Enrolled", ["BCom", "BMS", "BScIT"], key="s_reg_course_new")
+            s_year = st.selectbox("Year", ["FY", "SY", "TY"], key="s_reg_year_new")
             
             if st.button("Register Student Account"):
-                if reg_user and reg_pass:
+                if reg_s_user and reg_s_pass:
                     try:
-                        c.execute("INSERT INTO users VALUES (?, ?, 'Student', ?, ?, 1)", 
-                                  (reg_user, reg_pass, course, year))
+                        c.execute("INSERT INTO users (username, password, role, course, year, is_approved) VALUES (?, ?, 'Student', ?, ?, 1)", 
+                                  (reg_s_user, reg_s_pass, s_course, s_year))
                         conn.commit()
                         st.success("Student account created successfully! You can log in now.")
                     except sqlite3.IntegrityError:
                         st.error("Username already registered!")
                 else:
                     st.warning("Please fill out all fields.")
+                    
+        with tab3:
+            st.subheader("Reset Student Password")
+            fp_s_user = st.text_input("Student Username / Email", key="fp_s_user").strip()
+            fp_s_course = st.selectbox("Enrolled Course", ["BCom", "BMS", "BScIT"], key="fp_s_crs")
+            fp_s_new_pass = st.text_input("Enter New Password", type="password", key="fp_s_pass").strip()
+            
+            if st.button("Reset Student Password"):
+                if fp_s_user and fp_s_new_pass:
+                    c.execute("SELECT * FROM users WHERE username=? AND course=? AND role='Student'", (fp_s_user, fp_s_course))
+                    if c.fetchone():
+                        c.execute("UPDATE users SET password=? WHERE username=? AND role='Student'", (fp_s_new_pass, fp_s_user))
+                        conn.commit()
+                        st.success("Password reset successfully! You can now log in.")
+                    else:
+                        st.error("Matching student account not found.")
+                else:
+                    st.warning("Please fill in all fields.")
 
 # -------------------------------------------------------------
 # LOGGED-IN DASHBOARDS
@@ -355,68 +411,4 @@ else:
                 st.info("No attendance records match the selected filter.")
 
         with tab_notice:
-            st.subheader("Post Notice, Timetable, or Announcement")
-            
-            col_cat, col_t = st.columns([1, 2])
-            with col_cat:
-                n_category = st.selectbox("Category Type", ["📢 Notice", "📅 Timetable", "📝 Exam Schedule", "⚠️ Urgent"], key="adm_n_cat")
-            with col_t:
-                n_title = st.text_input("Title / Heading", key="adm_n_title")
-                
-            n_content = st.text_area("Content / Details / Schedule", key="adm_n_content")
-            uploaded_file = st.file_uploader("Attach PDF or Image (Optional)", type=["pdf", "png", "jpg", "jpeg"], key="adm_n_file")
-            
-            col_c, col_y = st.columns(2)
-            with col_c:
-                n_course = st.selectbox("Target Course", ["ALL", "BCom", "BMS", "BScIT"], key="adm_n_crs")
-            with col_y:
-                n_year = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"], key="adm_n_yr")
-                
-            if st.button("Publish Entry", type="primary"):
-                if n_title and n_content:
-                    today_str = str(datetime.date.today())
-                    file_bytes = uploaded_file.read() if uploaded_file else None
-                    file_name = uploaded_file.name if uploaded_file else None
-                    
-                    c.execute("""INSERT INTO notices 
-                                 (category, title, content, file_data, file_name, posted_by, role, target_course, target_year, date) 
-                                 VALUES (?, ?, ?, ?, ?, ?, 'Admin', ?, ?, ?)""",
-                              (n_category, n_title, n_content, file_bytes, file_name, st.session_state['user'], n_course, n_year, today_str))
-                    conn.commit()
-                    st.success("Entry published successfully!")
-                    st.rerun()
-                else:
-                    st.warning("Title and content are required.")
-                    
-            st.markdown("---")
-            render_notice_board(current_user=st.session_state['user'], user_role=st.session_state['role'], key_suffix="adm")
-
-        with tab_defaulters:
-            st.subheader("⚠️ Students Below 75% Attendance")
-            c.execute("SELECT username, course, year FROM users WHERE role='Student'")
-            all_st = c.fetchall()
-            
-            defaulter_data = []
-            for s_user, s_crs, s_yr in all_st:
-                c.execute("SELECT status FROM attendance WHERE student_name=?", (s_user,))
-                s_recs = c.fetchall()
-                t_count = len(s_recs)
-                p_count = sum(1 for r in s_recs if r[0] == 'Present')
-                pct = (p_count / t_count * 100) if t_count > 0 else 0.0
-                
-                if pct < 75.0:
-                    defaulter_data.append([s_user, s_crs, s_yr, t_count, p_count, f"{pct:.1f}%"])
-                    
-            if defaulter_data:
-                df_def = pd.DataFrame(defaulter_data, columns=["Student Email", "Course", "Year", "Lectures Held", "Lectures Attended", "Percentage"])
-                st.dataframe(df_def, use_container_width=True)
-            else:
-                st.success("🎉 Excellent! No students are currently below 75% attendance.")
-
-        with tab_users:
-            st.subheader("Registered System Users")
-            c.execute("SELECT username, role, course, year, is_approved FROM users")
-            all_users = pd.DataFrame(c.fetchall(), columns=["Username", "Role", "Course", "Year", "Approved"])
-            st.dataframe(all_users, use_container_width=True)
-            
-            st.markdown("---")
+            st.subheader("Post N
