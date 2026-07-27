@@ -4,7 +4,12 @@ import datetime
 import random
 from sqlalchemy import create_engine, text
 
-st.set_page_config(page_title="Campus Portal", layout="wide", page_icon="🎓")
+# Page Configuration
+st.set_page_config(
+    page_title="Niranjana Majithia College - Campus Portal", 
+    layout="wide", 
+    page_icon="🎓"
+)
 
 ADMIN_USER = st.secrets.get("ADMIN_USER", "9321481833")
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "aniKet@1124")
@@ -31,12 +36,120 @@ def init_db():
 
 init_db()
 
+# Custom Super Attractive Glassmorphism CSS Styling for Niranjana Majithia College Theme
 st.markdown("""
 <style>
-#MainMenu, header, footer {visibility: hidden;}
-.stApp {background: #f8fafc; color: #0f172a; font-family: 'Plus Jakarta Sans', sans-serif;}
-.stButton > button {width: 100%; border-radius: 12px; font-weight: 700; background: #4f46e5; color: white; padding: 12px; border: none;}
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    /* Global App Background with Stunning Mesh Gradient */
+    .stApp {
+        background: radial-gradient(circle at top left, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+        color: #0f172a;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Hide default Streamlit elements */
+    #MainMenu, header, footer {visibility: hidden;}
+
+    /* Gorgeous Glassmorphism College Header Banner */
+    .college-banner {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+        padding: 3rem 2rem;
+        border-radius: 24px;
+        color: white;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 20px 35px -10px rgba(30, 58, 138, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    .college-banner::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+        transform: rotate(30deg);
+        pointer-events: none;
+    }
+    .college-banner h1 {
+        font-weight: 800;
+        font-size: 2.7rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .college-banner p {
+        font-size: 1.2rem;
+        opacity: 0.95;
+        font-weight: 500;
+        margin: 0;
+        letter-spacing: 0.3px;
+    }
+
+    /* Modern Card Containers */
+    .custom-card, div.stExpander {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(12px);
+        padding: 1.5rem;
+        border-radius: 18px !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Enhanced Interactive Buttons */
+    .stButton > button {
+        width: 100%;
+        border-radius: 14px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 0.75rem 1rem;
+        border: none;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        box-shadow: 0 8px 22px rgba(37, 99, 235, 0.45);
+        transform: translateY(-2px);
+    }
+
+    /* Sidebar Glassmorphism Styling */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border-right: 1px solid #e2e8f0;
+    }
+
+    /* Gorgeous Custom Metric Cards */
+    div[data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(8px);
+        padding: 1.25rem 1.5rem;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        transition: transform 0.2s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    div[data-testid="stMetric"] label {
+        color: #475569 !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+    }
 </style>
+
+<div class="college-banner">
+    <h1>🏛️ Niranjana Majithia College</h1>
+    <p>Advanced Academic Portal & Student Management System</p>
+</div>
 """, unsafe_allow_html=True)
 
 JOKES = [
@@ -127,99 +240,101 @@ if 'joke' not in st.session_state:
     st.session_state['joke'] = random.choice(JOKES)
 
 if not st.session_state['logged_in']:
-    st.markdown("## 🎓 Campus Portal")
-    portal = st.selectbox("Select Portal", options=["🎓 Student", "👨‍🏫 Teacher", "👑 Admin"])
-    st.markdown("---")
+    col_l, col_m, col_r = st.columns([1, 2, 1])
+    with col_m:
+        st.markdown("<h3 style='text-align: center; color: #1e3a8a;'>🔐 Secure Portal Authentication</h3>", unsafe_allow_html=True)
+        portal = st.selectbox("Select Portal Access", options=["🎓 Student", "👨‍🏫 Teacher", "👑 Admin"])
+        st.markdown("---")
 
-    if portal == "🎓 Student":
-        tab_sel = st.radio("Options", ["Sign In", "Create Account", "Reset Password"], horizontal=True, label_visibility="collapsed")
-        if tab_sel == "Sign In":
-            u = st.text_input("Student Email", key="su").strip()
-            p = st.text_input("Password", type="password", key="sp").strip()
-            if st.button("Student Sign In"):
-                with engine.connect() as conn:
-                    res = conn.execute(text("SELECT * FROM users WHERE username=:u AND password=:p AND role='Student'"), {"u": u, "p": p}).fetchone()
-                if res:
-                    st.session_state.update({'logged_in': True, 'user': res[0], 'role': res[2], 'course': res[3], 'year': res[4]})
-                    st.rerun()
-                else:
-                    st.error("Invalid Credentials")
-        elif tab_sel == "Create Account":
-            ru = st.text_input("Email ID", key="rsu").strip()
-            rp = st.text_input("Password", type="password", key="rsp").strip()
-            rc = st.selectbox("Course", ["BCom", "BMS", "BScIT"], key="rsc")
-            ry = st.selectbox("Year", ["FY", "SY", "TY"], key="rsy")
-            if st.button("Create Account"):
-                try:
-                    with engine.begin() as conn:
-                        conn.execute(text("INSERT INTO users VALUES (:u, :p, 'Student', :c, :y, 1)"), {"u": ru, "p": rp, "c": rc, "y": ry})
-                    st.success("Account Created! Sign in now.")
-                except:
-                    st.error("User already exists.")
-        elif tab_sel == "Reset Password":
-            fu = st.text_input("Registered Email", key="fsu").strip()
-            fp = st.text_input("New Password", type="password", key="fsp").strip()
-            if st.button("Reset Password"):
-                with engine.begin() as conn:
-                    conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Student'"), {"p": fp, "u": fu})
-                st.success("Password Updated!")
-
-    elif portal == "👨‍🏫 Teacher":
-        tab_sel = st.radio("Options", ["Sign In", "Register Account", "Reset Password"], horizontal=True, label_visibility="collapsed")
-        if tab_sel == "Sign In":
-            u = st.text_input("Teacher Email", key="tu").strip()
-            p = st.text_input("Password", type="password", key="tp").strip()
-            if st.button("Teacher Sign In"):
-                with engine.connect() as conn:
-                    res = conn.execute(text("SELECT * FROM users WHERE username=:u AND password=:p AND role='Teacher'"), {"u": u, "p": p}).fetchone()
-                if res:
-                    if res[5] == 0:
-                        st.warning("Account pending admin approval.")
-                    else:
+        if portal == "🎓 Student":
+            tab_sel = st.radio("Options", ["Sign In", "Create Account", "Reset Password"], horizontal=True, label_visibility="collapsed")
+            if tab_sel == "Sign In":
+                u = st.text_input("Student Email", key="su").strip()
+                p = st.text_input("Password", type="password", key="sp").strip()
+                if st.button("Student Sign In"):
+                    with engine.connect() as conn:
+                        res = conn.execute(text("SELECT * FROM users WHERE username=:u AND password=:p AND role='Student'"), {"u": u, "p": p}).fetchone()
+                    if res:
                         st.session_state.update({'logged_in': True, 'user': res[0], 'role': res[2], 'course': res[3], 'year': res[4]})
                         st.rerun()
-                else:
-                    st.error("Invalid Credentials")
-        elif tab_sel == "Register Account":
-            ru = st.text_input("Email ID", key="rtu").strip()
-            rp = st.text_input("Password", type="password", key="rtp").strip()
-            rc = st.selectbox("Assigned Course", ["BCom", "BMS", "BScIT"], key="rtc")
-            ry = st.selectbox("Assigned Year", ["FY", "SY", "TY"], key="rty")
-            if st.button("Submit Registration"):
-                try:
+                    else:
+                        st.error("Invalid Credentials")
+            elif tab_sel == "Create Account":
+                ru = st.text_input("Email ID", key="rsu").strip()
+                rp = st.text_input("Password", type="password", key="rsp").strip()
+                rc = st.selectbox("Course", ["BCom", "BMS", "BScIT"], key="rsc")
+                ry = st.selectbox("Year", ["FY", "SY", "TY"], key="rsy")
+                if st.button("Create Account"):
+                    try:
+                        with engine.begin() as conn:
+                            conn.execute(text("INSERT INTO users VALUES (:u, :p, 'Student', :c, :y, 1)"), {"u": ru, "p": rp, "c": rc, "y": ry})
+                        st.success("Account Created! Sign in now.")
+                    except:
+                        st.error("User already exists.")
+            elif tab_sel == "Reset Password":
+                fu = st.text_input("Registered Email", key="fsu").strip()
+                fp = st.text_input("New Password", type="password", key="fsp").strip()
+                if st.button("Reset Password"):
                     with engine.begin() as conn:
-                        conn.execute(text("INSERT INTO users VALUES (:u, :p, 'Teacher', :c, :y, 0)"), {"u": ru, "p": rp, "c": rc, "y": ry})
-                    st.success("Registered! Awaiting admin approval.")
-                except:
-                    st.error("User already registered.")
-        elif tab_sel == "Reset Password":
-            fu = st.text_input("Registered Email", key="ftu").strip()
-            fp = st.text_input("New Password", type="password", key="ftp").strip()
-            if st.button("Reset Password"):
-                with engine.begin() as conn:
-                    conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Teacher'"), {"p": fp, "u": fu})
-                st.success("Password Updated!")
+                        conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Student'"), {"p": fp, "u": fu})
+                    st.success("Password Updated!")
 
-    elif portal == "👑 Admin":
-        tab_sel = st.radio("Options", ["Sign In", "Reset Password"], horizontal=True, label_visibility="collapsed")
-        if tab_sel == "Sign In":
-            u = st.text_input("Admin Username", key="ad_u").strip()
-            p = st.text_input("Password", type="password", key="ad_p").strip()
-            if st.button("Sign In to Control Center"):
-                with engine.connect() as conn:
-                    res = conn.execute(text("SELECT * FROM users WHERE username=:u AND password=:p AND role='Admin'"), {"u": u, "p": p}).fetchone()
-                if res:
-                    st.session_state.update({'logged_in': True, 'user': res[0], 'role': res[2]})
-                    st.rerun()
-                else:
-                    st.error("Invalid Admin Credentials.")
-        elif tab_sel == "Reset Password":
-            ru = st.text_input("Username to Force Reset", key="au").strip()
-            rp = st.text_input("New Admin Password", type="password", key="ap").strip()
-            if st.button("Update Admin Password"):
-                with engine.begin() as conn:
-                    conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Admin'"), {"p": rp, "u": ru})
-                st.success("Admin Password Updated!")
+        elif portal == "👨‍🏫 Teacher":
+            tab_sel = st.radio("Options", ["Sign In", "Register Account", "Reset Password"], horizontal=True, label_visibility="collapsed")
+            if tab_sel == "Sign In":
+                u = st.text_input("Teacher Email", key="tu").strip()
+                p = st.text_input("Password", type="password", key="tp").strip()
+                if st.button("Teacher Sign In"):
+                    with engine.connect() as conn:
+                        res = conn.execute(text("SELECT * FROM users WHERE username=:u AND password=:p AND role='Teacher'"), {"u": u, "p": p}).fetchone()
+                    if res:
+                        if res[5] == 0:
+                            st.warning("Account pending admin approval.")
+                        else:
+                            st.session_state.update({'logged_in': True, 'user': res[0], 'role': res[2], 'course': res[3], 'year': res[4]})
+                            st.rerun()
+                    else:
+                        st.error("Invalid Credentials")
+            elif tab_sel == "Register Account":
+                ru = st.text_input("Email ID", key="rtu").strip()
+                rp = st.text_input("Password", type="password", key="rtp").strip()
+                rc = st.selectbox("Assigned Course", ["BCom", "BMS", "BScIT"], key="rtc")
+                ry = st.selectbox("Assigned Year", ["FY", "SY", "TY"], key="rty")
+                if st.button("Submit Registration"):
+                    try:
+                        with engine.begin() as conn:
+                            conn.execute(text("INSERT INTO users VALUES (:u, :p, 'Teacher', :c, :y, 0)"), {"u": ru, "p": rp, "c": rc, "y": ry})
+                        st.success("Registered! Awaiting admin approval.")
+                    except:
+                        st.error("User already registered.")
+            elif tab_sel == "Reset Password":
+                fu = st.text_input("Registered Email", key="ftu").strip()
+                fp = st.text_input("New Password", type="password", key="ftp").strip()
+                if st.button("Reset Password"):
+                    with engine.begin() as conn:
+                        conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Teacher'"), {"p": fp, "u": fu})
+                    st.success("Password Updated!")
+
+        elif portal == "👑 Admin":
+            tab_sel = st.radio("Options", ["Sign In", "Reset Password"], horizontal=True, label_visibility="collapsed")
+            if tab_sel == "Sign In":
+                u = st.text_input("Admin Username", key="ad_u").strip()
+                p = st.text_input("Password", type="password", key="ad_p").strip()
+                if st.button("Sign In to Control Center"):
+                    with engine.connect() as conn:
+                        res = conn.execute(text("SELECT * FROM users WHERE username=:u AND password=:p AND role='Admin'"), {"u": u, "p": p}).fetchone()
+                    if res:
+                        st.session_state.update({'logged_in': True, 'user': res[0], 'role': res[2]})
+                        st.rerun()
+                    else:
+                        st.error("Invalid Admin Credentials.")
+            elif tab_sel == "Reset Password":
+                ru = st.text_input("Username to Force Reset", key="au").strip()
+                rp = st.text_input("New Admin Password", type="password", key="ap").strip()
+                if st.button("Update Admin Password"):
+                    with engine.begin() as conn:
+                        conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Admin'"), {"p": rp, "u": ru})
+                    st.success("Admin Password Updated!")
 
 else:
     col1, col2 = st.columns([3, 1])
@@ -235,7 +350,7 @@ else:
     role = st.session_state.get('role')
 
     if role == "Admin":
-        st.title("👑 Master Admin Control Center")
+        st.title("👑 Master Admin Control Center - Niranjana Majithia College")
         admin_menu = st.radio("Menu", ["📊 Overview", "📢 Post Notice", "⚠️ Defaulters", "👥 User List", "✅ Approvals", "📅 Calendar"], horizontal=True, key="admin_menu_radio")
         st.markdown("---")
         
@@ -297,131 +412,4 @@ else:
                 if pct < 75.0:
                     d_list.append([s[0], s[1], s[2], t, p, f"{pct:.1f}%"])
             if d_list:
-                st.dataframe(pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attended", "Percentage"]), use_container_width=True)
-            else:
-                st.success("🎉 No defaulters found!")
-
-        elif admin_menu == "👥 User List":
-            st.subheader("👥 System User Management")
-            with engine.connect() as conn:
-                all_u = pd.DataFrame(conn.execute(text("SELECT username, role, course, year, is_approved FROM users")).fetchall(), columns=["User", "Role", "Course", "Year", "Approved"])
-            st.dataframe(all_u, use_container_width=True)
-            udel = st.selectbox("Select User Account to Delete", [u for u in all_u['User'] if u != ADMIN_USER], key="del_usr")
-            if st.button("🗑️ Delete Selected User Account"):
-                with engine.begin() as conn:
-                    conn.execute(text("DELETE FROM users WHERE username=:u"), {"u": udel})
-                st.success("User Deleted!")
-                st.rerun()
-
-        elif admin_menu == "✅ Approvals":
-            st.subheader("✅ Pending Teacher Registrations")
-            with engine.connect() as conn:
-                p = conn.execute(text("SELECT username FROM users WHERE role='Teacher' AND is_approved=0")).fetchall()
-            if p:
-                sel = st.selectbox("Select Teacher", [x[0] for x in p], key="sel_tch")
-                if st.button("Approve Selected Teacher Account"):
-                    with engine.begin() as conn:
-                        conn.execute(text("UPDATE users SET is_approved=1 WHERE username=:u"), {"u": sel})
-                    st.success("Teacher Approved!")
-                    st.rerun()
-            else:
-                st.info("No pending teacher approvals.")
-
-        elif admin_menu == "📅 Calendar":
-            show_cal(u_role="Admin")
-
-    elif role == "Teacher":
-        st.title(f"👨‍🏫 Faculty Dashboard ({st.session_state.get('course', '')} - {st.session_state.get('year', '')})")
-        teacher_menu = st.radio("Menu", ["📝 Mark Attendance", "📢 Class Notices", "📊 Class Analytics", "📅 Calendar"], horizontal=True, key="teacher_menu_radio")
-        st.markdown("---")
-        
-        if teacher_menu == "📝 Mark Attendance":
-            ld = st.date_input("Select Lecture Date", datetime.date.today(), key="tch_ld")
-            ls = st.text_input("Subject Name", "General", key="tch_ls")
-            lm = ld.strftime("%B %Y")
-            with engine.connect() as conn:
-                sl = [x[0] for x in conn.execute(text("SELECT username FROM users WHERE role='Student' AND course=:c AND year=:y"), {"c": st.session_state.get('course', ''), "y": st.session_state.get('year', '')}).fetchall()]
-            if sl:
-                st.subheader("📋 Student Attendance List")
-                mks = {}
-                for s in sl:
-                    mks[s] = st.radio(f"👤 {s}", ["Present", "Absent"], key=f"att_rad_{s}", horizontal=True)
-                if st.button("💾 Submit & Save Attendance Logs", key="tch_save_att"):
-                    with engine.begin() as conn:
-                        for s, stt in mks.items():
-                            conn.execute(
-                                text("INSERT INTO attendance VALUES (:s, :c, :y, :sub, :d, :m, :stt, :mb)"),
-                                {"s": s, "c": st.session_state.get('course', ''), "y": st.session_state.get('year', ''), "sub": ls, "d": str(ld), "m": lm, "stt": stt, "mb": st.session_state.get('user', '')}
-                            )
-                    st.success("Attendance Successfully Saved!")
-            else:
-                st.warning("No students registered for your class yet. (Make sure students are registered under Course: " + str(st.session_state.get('course', '')) + " and Year: " + str(st.session_state.get('year', '')) + ")")
-
-        elif teacher_menu == "📢 Class Notices":
-            nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="tnc")
-            nt = st.text_input("Notice Title", key="tnt")
-            nb = st.text_area("Notice Body", key="tnb")
-            if st.button("Publish Notice to Class", key="tch_pub_notice"):
-                with engine.begin() as conn:
-                    conn.execute(
-                        text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Teacher', :tc, :ty, :d)"),
-                        {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": st.session_state.get('course', ''), "ty": st.session_state.get('year', ''), "d": str(datetime.date.today())}
-                    )
-                st.success("Published!")
-                st.rerun()
-            st.markdown("---")
-            show_notices(t_crs=st.session_state.get('course', 'ALL'), t_yr=st.session_state.get('year', 'ALL'), c_user=st.session_state.get('user', ''), u_role="Teacher", pfx="tch")
-
-        elif teacher_menu == "📊 Class Analytics":
-            with engine.connect() as conn:
-                recs = conn.execute(text("SELECT student_name, subject, date, status FROM attendance WHERE course=:c AND year=:y"), {"c": st.session_state.get('course', ''), "y": st.session_state.get('year', '')}).fetchall()
-            
-            df_class = pd.DataFrame(recs, columns=["Student", "Subject", "Date", "Status"]) if recs else pd.DataFrame(columns=["Student", "Subject", "Date", "Status"])
-            st.dataframe(df_class, use_container_width=True)
-            if not df_class.empty:
-                st.bar_chart(df_class['Status'].value_counts())
-            else:
-                st.info("ℹ️ No attendance logs recorded for this class yet. Go to 'Mark Attendance' to add some records.")
-
-        elif teacher_menu == "📅 Calendar":
-            show_cal(u_role="Teacher")
-
-    elif role == "Student":
-        st.title("🎓 Student Dashboard")
-        student_menu = st.radio("Menu", ["📊 My Attendance", "📢 Class Announcements", "📅 Academic Calendar", "😄 Student Lounge"], horizontal=True, key="student_menu_radio")
-        st.markdown("---")
-        
-        if student_menu == "📊 My Attendance":
-            with engine.connect() as conn:
-                recs = conn.execute(text("SELECT date, subject, status FROM attendance WHERE student_name=:u"), {"u": st.session_state.get('user', '')}).fetchall()
-            
-            tot = len(recs)
-            pr_count = sum(1 for r in recs if r[2] == 'Present') if recs else 0
-            pct = (pr_count / tot * 100) if tot > 0 else 0.0
-            
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Total Lectures", tot)
-            c2.metric("Lectures Attended", pr_count)
-            c3.metric("Attendance Score", f"{pct:.1f}%")
-            st.progress(min(int(pct), 100))
-            st.info(get_shortfall(pr_count, tot))
-            st.markdown("---")
-            
-            df_std = pd.DataFrame(recs, columns=["Date", "Subject", "Status"]) if recs else pd.DataFrame(columns=["Date", "Subject", "Status"])
-            srch = st.text_input("🔍 Quick Filter Logs", "", key="std_srch_att")
-            if srch and not df_std.empty:
-                df_std = df_std[df_std['Subject'].str.contains(srch, case=False) | df_std['Date'].str.contains(srch, case=False)]
-            st.dataframe(df_std, use_container_width=True)
-
-        elif student_menu == "📢 Class Announcements":
-            show_notices(t_crs=st.session_state.get('course', 'ALL'), t_yr=st.session_state.get('year', 'ALL'), c_user=st.session_state.get('user', ''), u_role="Student", pfx="std")
-
-        elif student_menu == "📅 Academic Calendar":
-            show_cal(u_role="Student")
-
-        elif student_menu == "😄 Student Lounge":
-            st.subheader("😄 Student Tech Humor")
-            st.info(st.session_state['joke'])
-            if st.button("🔄 Get Another Joke", key="std_joke_btn"):
-                st.session_state['joke'] = random.choice(JOKES)
-                st.rerun()
+                st.dataframe(pd.DataFrame(d_list, columns=["Student", "Course", "Year", "Total", "Attende
