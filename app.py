@@ -331,7 +331,7 @@ if not st.session_state['logged_in']:
                 fu = st.text_input("Registered Email", key="ftu").strip()
                 fp = st.text_input("New Password", type="password", key="ftp").strip()
                 if st.button("Reset Password"):
-                    with engine.connect() as conn:
+                    with engine.begin() as conn:
                         conn.execute(text("UPDATE users SET password=:p WHERE username=:u AND role='Teacher'"), {"p": fp, "u": fu})
                     st.success("Password Updated!")
 
@@ -425,4 +425,4 @@ else:
             d_list = []
             for s in stds:
                 with engine.connect() as conn:
-                    ar = c
+                    ar = con
