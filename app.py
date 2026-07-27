@@ -15,15 +15,12 @@ c.execute('''CREATE TABLE IF NOT EXISTS users
 c.execute('''CREATE TABLE IF NOT EXISTS attendance
              (student_name TEXT, course TEXT, year TEXT, subject TEXT, date TEXT, month TEXT, status TEXT, marked_by TEXT)''')
 
-# Extended Notices table with file attachments
 c.execute('''CREATE TABLE IF NOT EXISTS notices
              (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, title TEXT, content TEXT, file_data BLOB, file_name TEXT, posted_by TEXT, role TEXT, target_course TEXT, target_year TEXT, date TEXT)''')
 
-# Holiday Calendar table
 c.execute('''CREATE TABLE IF NOT EXISTS holidays
              (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, date TEXT, category TEXT)''')
 
-# Schema Migrations
 c.execute("PRAGMA table_info(notices)")
 n_cols = [col[1] for col in c.fetchall()]
 if 'file_data' not in n_cols:
@@ -42,7 +39,6 @@ if 'subject' not in a_cols:
 
 conn.commit()
 
-# Ensure Default Admin Exists
 c.execute("""
     INSERT INTO users (username, password, role, course, year, is_approved)
     VALUES ('naman@1125', 'aniKet@124', 'Admin', 'ALL', 'ALL', 1)
@@ -50,7 +46,6 @@ c.execute("""
 """)
 conn.commit()
 
-# Helper: Calculate 75% attendance shortfall
 def calculate_75_shortfall(presents, total):
     if total == 0:
         return 0, "No lectures recorded yet."
@@ -62,7 +57,6 @@ def calculate_75_shortfall(presents, total):
     needed = (3 * total) - (4 * presents)
     return max(0, needed), f"⚠️ You need to attend the next **{needed}** consecutive lecture(s) to reach 75%."
 
-# Helper: Render Notices & Timetables Board with Delete and Download
 def render_notice_board(target_course="ALL", target_year="ALL", current_user="", user_role="", key_suffix=""):
     st.subheader("📌 Notices, Timetables & Announcements")
     
@@ -92,7 +86,6 @@ def render_notice_board(target_course="ALL", target_year="ALL", current_user="",
             with st.expander(f"{category} | {title} ({date_posted})", expanded=True):
                 st.write(content)
                 
-                # Render file download button if an attachment exists
                 if file_data and file_name:
                     st.download_button(
                         label=f"📎 Download Attachment ({file_name})",
@@ -105,7 +98,6 @@ def render_notice_board(target_course="ALL", target_year="ALL", current_user="",
                 with col_cap:
                     st.caption(f"Posted by: **{posted_by}** ({role}) | Target: Course `{tc}`, Year `{ty}`")
                 
-                # Delete permission for Admins or the teacher who posted it
                 with col_del:
                     if user_role == "Admin" or (user_role == "Teacher" and posted_by == current_user):
                         if st.button("🗑️ Delete", key=f"del_n_{n_id}_{key_suffix}"):
@@ -116,7 +108,6 @@ def render_notice_board(target_course="ALL", target_year="ALL", current_user="",
     else:
         st.info("No notices or timetables posted for this view.")
 
-# Helper: Render Academic & Holiday Calendar
 def render_holiday_calendar(user_role=""):
     st.subheader("📅 College Holiday & Academic Calendar")
     
@@ -171,7 +162,6 @@ st.sidebar.title("📌 Navigation Portal")
 if not st.session_state['logged_in']:
     portal_choice = st.sidebar.radio("Select Portal", ["👑 Admin Login", "👨‍🏫 Teacher Portal", "🎓 Student Portal"])
 
-    # --- 1. ADMIN PORTAL ---
     if portal_choice == "👑 Admin Login":
         st.header("🔑 Admin Sign-In")
         st.caption("Restricted administrative control panel.")
@@ -191,7 +181,6 @@ if not st.session_state['logged_in']:
             else:
                 st.error("Invalid Admin credentials.")
 
-    # --- 2. TEACHER PORTAL ---
     elif portal_choice == "👨‍🏫 Teacher Portal":
         st.header("👨‍🏫 Teacher Portal")
         tab1, tab2 = st.tabs(["Teacher Login", "Teacher Register"])
@@ -235,7 +224,6 @@ if not st.session_state['logged_in']:
                 else:
                     st.warning("Please fill out all fields.")
 
-    # --- 3. STUDENT PORTAL ---
     elif portal_choice == "🎓 Student Portal":
         st.header("🎓 Student Portal")
         tab1, tab2 = st.tabs(["Student Login", "Student Register"])
@@ -298,7 +286,6 @@ else:
         st.session_state['logged_in'] = False
         st.rerun()
 
-    # --- ADMIN DASHBOARD ---
     if st.session_state['role'] == "Admin":
         st.title("👑 Master Admin Command Center")
         
@@ -311,7 +298,6 @@ else:
             "📅 Academic Calendar"
         ])
 
-        # Tab 1: Global Stats & Reports
         with tab_stats:
             st.subheader("Global Attendance Overview")
             
@@ -368,7 +354,6 @@ else:
             else:
                 st.info("No attendance records match the selected filter.")
 
-        # Tab 2: Admin Notice & Timetable Management
         with tab_notice:
             st.subheader("Post Notice, Timetable, or Announcement")
             
@@ -406,7 +391,6 @@ else:
             st.markdown("---")
             render_notice_board(current_user=st.session_state['user'], user_role=st.session_state['role'], key_suffix="adm")
 
-        # Tab 3: Defaulter List (<75%)
         with tab_defaulters:
             st.subheader("⚠️ Students Below 75% Attendance")
             c.execute("SELECT username, course, year FROM users WHERE role='Student'")
@@ -424,4 +408,15 @@ else:
                     defaulter_data.append([s_user, s_crs, s_yr, t_count, p_count, f"{pct:.1f}%"])
                     
             if defaulter_data:
-                df_def =
+                df_def = pd.DataFrame(defaulter_data, columns=["Student Email", "Course", "Year", "Lectures Held", "Lectures Attended", "Percentage"])
+                st.dataframe(df_def, use_container_width=True)
+            else:
+                st.success("🎉 Excellent! No students are currently below 75% attendance.")
+
+        with tab_users:
+            st.subheader("Registered System Users")
+            c.execute("SELECT username, role, course, year, is_approved FROM users")
+            all_users = pd.DataFrame(c.fetchall(), columns=["Username", "Role", "Course", "Year", "Approved"])
+            st.dataframe(all_users, use_container_width=True)
+            
+            st.markdown("---")
