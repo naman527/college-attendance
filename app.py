@@ -229,7 +229,9 @@ else:
             
     st.markdown("---")
 
-    if st.session_state.get('role') == "Admin":
+    role = st.session_state.get('role')
+
+    if role == "Admin":
         st.title("👑 Master Admin Control Center")
         admin_menu = st.radio("Menu", ["📊 Overview", "📢 Post Notice", "⚠️ Defaulters", "👥 User List", "✅ Approvals", "📅 Calendar"], horizontal=True)
         st.markdown("---")
@@ -322,7 +324,7 @@ else:
         elif admin_menu == "📅 Calendar":
             show_cal(u_role="Admin")
 
-    elif st.session_state.get('role') == "Teacher":
+    elif role == "Teacher":
         st.title(f"👨‍🏫 Faculty Dashboard ({st.session_state.get('course', '')} - {st.session_state.get('year', '')})")
         teacher_menu = st.radio("Menu", ["📝 Mark Attendance", "📢 Class Notices", "📊 Class Analytics", "📅 Calendar"], horizontal=True)
         st.markdown("---")
@@ -356,4 +358,4 @@ else:
                 st.success("Published!")
                 st.rerun()
             st.markdown("---")
-            show_notices(t_crs=st.se
+            show_notices(t_crs=st.session_s
