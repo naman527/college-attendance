@@ -236,7 +236,7 @@ else:
 
     if role == "Admin":
         st.title("👑 Master Admin Control Center")
-        admin_menu = st.radio("Menu", ["📊 Overview", "📢 Post Notice", "⚠️ Defaulters", "👥 User List", "✅ Approvals", "📅 Calendar"], horizontal=True)
+        admin_menu = st.radio("Menu", ["📊 Overview", "📢 Post Notice", "⚠️ Defaulters", "👥 User List", "✅ Approvals", "📅 Calendar"], horizontal=True, key="admin_menu_radio")
         st.markdown("---")
         
         if admin_menu == "📊 Overview":
@@ -329,7 +329,7 @@ else:
 
     elif role == "Teacher":
         st.title(f"👨‍🏫 Faculty Dashboard ({st.session_state.get('course', '')} - {st.session_state.get('year', '')})")
-        teacher_menu = st.radio("Menu", ["📝 Mark Attendance", "📢 Class Notices", "📊 Class Analytics", "📅 Calendar"], horizontal=True)
+        teacher_menu = st.radio("Menu", ["📝 Mark Attendance", "📢 Class Notices", "📊 Class Analytics", "📅 Calendar"], horizontal=True, key="teacher_menu_radio")
         st.markdown("---")
         
         if teacher_menu == "📝 Mark Attendance":
@@ -349,7 +349,7 @@ else:
                             conn.execute(text("INSERT INTO attendance VALUES (:s, :c, :y, :sub, :d, :m, :stt, :mb)"), {"s": s, "c": st.session_state.get('course', ''), "y": st.session_state.get('year', ''), "sub": ls, "d": str(ld), "m": lm, "stt": stt, "mb": st.session_state.get('user', '')})
                     st.success("Attendance Successfully Saved!")
             else:
-                st.warning("No students registered for your class yet.")
+                st.warning("No students registered for your class yet. (Make sure students are registered under Course: " + str(st.session_state.get('course', '')) + " and Year: " + str(st.session_state.get('year', '')) + ")")
 
         elif teacher_menu == "📢 Class Notices":
             nc = st.selectbox("Category", ["Notice", "Exam", "Urgent"], key="tnc")
@@ -357,7 +357,4 @@ else:
             nb = st.text_area("Notice Body", key="tnb")
             if st.button("🚀 Publish Notice to Class"):
                 with engine.begin() as conn:
-                    conn.execute(text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Teacher', :tc, :ty, :d)"), {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": st.session_state.get('course', ''), "ty": st.session_state.get('year', ''), "d": str(datetime.date.today())})
-                st.success("Published!")
-                st.rerun()
-            st.markdown("---")
+                    conn.execute(text("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (:c, :t, :cnt, :pb, 'Teacher', :tc, :ty, :d)"), {"c": nc, "t": nt, "cnt": nb, "pb": st.session_state.get('user', ''), "tc": st.session_sta
