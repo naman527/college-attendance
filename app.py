@@ -13,16 +13,15 @@ st.set_page_config(
 )
 
 # --- SECURE CREDENTIALS (NO HARDCODED ACCOUNTS) ---
-# Set these in your Streamlit Cloud Secrets, or use defaults below
 ADMIN_USER = st.secrets.get("ADMIN_USER", "admin")
 ADMIN_PASS = st.secrets.get("ADMIN_PASS", "admin123")
 
-# --- HIGH-CONTRAST & MOBILE-FIRST STYLING ---
+# --- HIGH-CONTRAST MOBILE-FIRST CSS ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* HIDE STREAMLIT BRANDING, GITHUB LINK & FOOTER BADGES */
+/* HIDE STREAMLIT BRANDING & FOOTER BADGES */
 #MainMenu, header, footer, 
 div[data-testid="stToolbar"], 
 div[data-testid="stDecoration"], 
@@ -51,15 +50,15 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid #1f2937 !important;
 }
 
-/* FIX UNREADABLE INPUT LABELS & TEXT */
+/* HIGH-CONTRAST INPUT LABELS */
 label, .stTextInput label, .stSelectbox label, .stTextArea label {
-    color: #cbd5e1 !important;
-    font-size: 0.9rem !important;
+    color: #f8fafc !important;
+    font-size: 0.92rem !important;
     font-weight: 600 !important;
     margin-bottom: 6px !important;
 }
 
-/* FIX UNREADABLE TABS */
+/* HIGH-CONTRAST TABS */
 button[data-baseweb="tab"] {
     color: #94a3b8 !important;
     font-weight: 600 !important;
@@ -82,7 +81,7 @@ button[data-baseweb="tab"][aria-selected="true"] {
     color: #ffffff !important;
     border: 1px solid #334155 !important;
     border-radius: 12px !important;
-    font-size: 16px !important; /* Prevents iOS auto-zoom */
+    font-size: 16px !important;
     padding: 12px !important;
 }
 
@@ -96,7 +95,7 @@ div[data-aria-label="Show password"] button {
     color: #94a3b8 !important;
 }
 
-/* Modern Rounded Buttons */
+/* Buttons */
 .stButton > button {
     width: 100% !important;
     border-radius: 12px !important;
@@ -105,18 +104,9 @@ div[data-aria-label="Show password"] button {
     padding: 12px 20px !important;
     border: none !important;
     margin-top: 8px !important;
-}
-
-.stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.4) !important;
-}
-
-.stButton > button[kind="secondary"] {
-    background-color: #1e293b !important;
-    color: #f1f5f9 !important;
-    border: 1px solid #334155 !important;
+    box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3) !important;
 }
 
 /* Cards & Containers */
@@ -194,7 +184,7 @@ CREATE TABLE IF NOT EXISTS holidays (
 )
 """)
 
-# Database Migrations
+# Migrations Check
 c.execute("PRAGMA table_info(notices)")
 n_cols = [col[1] for col in c.fetchall()]
 if 'file_data' not in n_cols:
@@ -213,7 +203,7 @@ if 'subject' not in a_cols:
 
 conn.commit()
 
-# Dynamic Master Admin Account (Pulled from Secrets or Standard Placeholder)
+# Dynamic Admin User (Uses Secrets or generic default)
 c.execute("""
 INSERT INTO users (
     username, password, role, course, year, is_approved
@@ -239,15 +229,11 @@ def get_shortfall(presents, total):
     if pct >= 75.0:
         return "🎉 Excellent! You are above the 75% attendance target."
     needed = (3 * total) - (4 * presents)
-    return f"⚠️ Attend the next {max(0, needed)} lectures continuously to reach 75%."
+    return f"⚠️ Attend the next {max(0, int(needed))} lectures continuously to reach 75%."
 
 def show_notices(t_crs="ALL", t_yr="ALL", c_user="", u_role="", pfx=""):
     st.subheader("📢 Class Notices & Updates")
-    c_flt = st.selectbox(
-        "Filter Category",
-        ["ALL", "Notice", "Exam", "Urgent"],
-        key=f"c_{pfx}"
-    )
+    c_flt = st.selectbox("Filter Category", ["ALL", "Notice", "Exam", "Urgent"], key=f"c_{pfx}")
     
     q = "SELECT id, category, title, content, file_data, file_name, posted_by, role, date FROM notices WHERE 1=1"
     prms = []
@@ -269,16 +255,10 @@ def show_notices(t_crs="ALL", t_yr="ALL", c_user="", u_role="", pfx=""):
             with st.expander(f"📌 [{n[1]}] {n[2]} ({n[8]})"):
                 st.write(n[3])
                 if n[4] and n[5]:
-                    st.download_button(
-                        "📎 Download Attachment",
-                        data=n[4],
-                        file_name=n[5],
-                        key=f"dl_{n[0]}_{pfx}",
-                        type="secondary"
-                    )
+                    st.download_button("📎 Download Attachment", data=n[4], file_name=n[5], key=f"dl_{n[0]}_{pfx}")
                 st.caption(f"Posted by: {n[6]} ({n[7]})")
                 if u_role == "Admin" or (u_role == "Teacher" and n[6] == c_user):
-                    if st.button("🗑️ Delete Notice", key=f"del_{n[0]}_{pfx}", type="secondary"):
+                    if st.button("🗑️ Delete Notice", key=f"del_{n[0]}_{pfx}"):
                         c.execute("DELETE FROM notices WHERE id=?", (n[0],))
                         conn.commit()
                         st.success("Notice removed!")
@@ -293,7 +273,7 @@ def show_cal(u_role=""):
             ht = st.text_input("Event Title", key="ht")
             hd = st.date_input("Event Date", datetime.date.today(), key="hd")
             hc = st.selectbox("Category", ["Holiday", "Exam", "Sports", "Cultural"], key="hc")
-            if st.button("💾 Save Event", type="primary"):
+            if st.button("💾 Save Event"):
                 if ht:
                     c.execute("INSERT INTO holidays (title, date, category) VALUES (?, ?, ?)", (ht, str(hd), hc))
                     conn.commit()
@@ -307,7 +287,7 @@ def show_cal(u_role=""):
         st.dataframe(df[["Event", "Date", "Category"]], use_container_width=True)
         if u_role == "Admin":
             del_id = st.selectbox("Select Event ID to Delete", [e[0] for e in evs])
-            if st.button("🗑️ Remove Event", type="secondary"):
+            if st.button("🗑️ Remove Event"):
                 c.execute("DELETE FROM holidays WHERE id=?", (del_id,))
                 conn.commit()
                 st.success("Event Deleted!")
@@ -335,7 +315,7 @@ if not st.session_state['logged_in']:
         with t1:
             u = st.text_input("Admin Username").strip()
             p = st.text_input("Password", type="password").strip()
-            if st.button("Sign In to Control Center", type="primary"):
+            if st.button("Sign In to Control Center"):
                 c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Admin'", (u, p))
                 res = c.fetchone()
                 if res:
@@ -348,7 +328,7 @@ if not st.session_state['logged_in']:
         with t2:
             ru = st.text_input("Username", key="au").strip()
             rp = st.text_input("New Password", type="password", key="ap").strip()
-            if st.button("Update Admin Password", type="primary"):
+            if st.button("Update Admin Password"):
                 c.execute("UPDATE users SET password=? WHERE username=? AND role='Admin'", (rp, ru))
                 conn.commit()
                 st.success("Password Updated!")
@@ -359,7 +339,7 @@ if not st.session_state['logged_in']:
         with t1:
             u = st.text_input("Teacher Email", key="tu").strip()
             p = st.text_input("Password", type="password", key="tp").strip()
-            if st.button("Teacher Sign In", type="primary"):
+            if st.button("Teacher Sign In"):
                 c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Teacher'", (u, p))
                 res = c.fetchone()
                 if res:
@@ -379,7 +359,7 @@ if not st.session_state['logged_in']:
             rp = st.text_input("Password", type="password", key="rtp").strip()
             rc = st.selectbox("Assigned Course", ["BCom", "BMS", "BScIT"], key="rtc")
             ry = st.selectbox("Assigned Year", ["FY", "SY", "TY"], key="rty")
-            if st.button("Submit Registration", type="primary"):
+            if st.button("Submit Registration"):
                 try:
                     c.execute("INSERT INTO users VALUES (?, ?, 'Teacher', ?, ?, 0)", (ru, rp, rc, ry))
                     conn.commit()
@@ -389,7 +369,7 @@ if not st.session_state['logged_in']:
         with t3:
             fu = st.text_input("Registered Email", key="ftu").strip()
             fp = st.text_input("New Password", type="password", key="ftp").strip()
-            if st.button("Reset Password", type="primary"):
+            if st.button("Reset Password"):
                 c.execute("UPDATE users SET password=? WHERE username=? AND role='Teacher'", (fp, fu))
                 conn.commit()
                 st.success("Password Updated!")
@@ -400,7 +380,7 @@ if not st.session_state['logged_in']:
         with t1:
             u = st.text_input("Student Email", key="su").strip()
             p = st.text_input("Password", type="password", key="sp").strip()
-            if st.button("Student Sign In", type="primary"):
+            if st.button("Student Sign In"):
                 c.execute("SELECT * FROM users WHERE username=? AND password=? AND role='Student'", (u, p))
                 res = c.fetchone()
                 if res:
@@ -417,7 +397,7 @@ if not st.session_state['logged_in']:
             rp = st.text_input("Password", type="password", key="rsp").strip()
             rc = st.selectbox("Course", ["BCom", "BMS", "BScIT"], key="rsc")
             ry = st.selectbox("Year", ["FY", "SY", "TY"], key="rsy")
-            if st.button("Create Account", type="primary"):
+            if st.button("Create Account"):
                 try:
                     c.execute("INSERT INTO users VALUES (?, ?, 'Student', ?, ?, 1)", (ru, rp, rc, ry))
                     conn.commit()
@@ -427,7 +407,7 @@ if not st.session_state['logged_in']:
         with t3:
             fu = st.text_input("Registered Email", key="fsu").strip()
             fp = st.text_input("New Password", type="password", key="fsp").strip()
-            if st.button("Reset Password", type="primary"):
+            if st.button("Reset Password"):
                 c.execute("UPDATE users SET password=? WHERE username=? AND role='Student'", (fp, fu))
                 conn.commit()
                 st.success("Password Updated!")
@@ -439,12 +419,12 @@ else:
     
     with st.sidebar.expander("⚙️ Account Settings"):
         npw = st.text_input("Change Password", type="password")
-        if st.button("Update Password", type="primary"):
+        if st.button("Update Password"):
             c.execute("UPDATE users SET password=? WHERE username=?", (npw, st.session_state.get('user', '')))
             conn.commit()
             st.success("Updated!")
 
-    if st.sidebar.button("🚪 Logout", type="secondary"):
+    if st.sidebar.button("🚪 Logout"):
         st.session_state['logged_in'] = False
         st.rerun()
 
@@ -478,8 +458,7 @@ else:
                     label="📥 Export Attendance Records (CSV)",
                     data=csv,
                     file_name="all_attendance_logs.csv",
-                    mime="text/csv",
-                    type="primary"
+                    mime="text/csv"
                 )
 
         with t_n:
@@ -488,7 +467,7 @@ else:
             nb = st.text_area("Notice Details")
             crs = st.selectbox("Target Course", ["ALL", "BCom", "BMS", "BScIT"])
             yr = st.selectbox("Target Year", ["ALL", "FY", "SY", "TY"])
-            if st.button("🚀 Publish Notice Broadcast", type="primary"):
+            if st.button("🚀 Publish Notice Broadcast"):
                 c.execute("INSERT INTO notices (category, title, content, posted_by, role, target_course, target_year, date) VALUES (?, ?, ?, ?, 'Admin', ?, ?, ?)", (nc, nt, nb, st.session_state.get('user', ''), crs, yr, str(datetime.date.today())))
                 conn.commit()
                 st.success("Notice Published!")
@@ -522,4 +501,23 @@ else:
             st.dataframe(all_u, use_container_width=True)
             
             udel = st.selectbox("Select User Account to Delete", [u for u in all_u['User'] if u != ADMIN_USER])
-            if st.button("🗑️ Delete Selected User Account", type
+            if st.button("🗑️ Delete Selected User Account"):
+                c.execute("DELETE FROM users WHERE username=?", (udel,))
+                conn.commit()
+                st.success("User Deleted!")
+                st.rerun()
+
+        with t_a:
+            st.subheader("✅ Pending Teacher Registrations")
+            c.execute("SELECT username FROM users WHERE role='Teacher' AND is_approved=0")
+            p = c.fetchall()
+            if p:
+                sel = st.selectbox("Select Teacher", [x[0] for x in p])
+                if st.button("Approve Selected Teacher Account"):
+                    c.execute("UPDATE users SET is_approved=1 WHERE username=?", (sel,))
+                    conn.commit()
+                    st.success("Teacher Approved!")
+                    st.rerun()
+            else:
+                st.info("No pending teacher approvals.")
+                
